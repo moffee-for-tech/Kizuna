@@ -1,0 +1,192 @@
+@import "tailwindcss";
+
+:root {
+  --bg: #2f2f2c;
+  --bg-sidebar: #2a2a27;
+  --bg-surface: #3a3a36;
+  --bg-surface-hover: #454540;
+  --bg-input: #3a3a36;
+  --bg-modal: #353531;
+  --text: #e8e4dd;
+  --text-secondary: #a8a49d;
+  --text-muted: #7a776f;
+  --accent: #d4a574;
+  --accent-hover: #e0b88a;
+  --border: #4a4a44;
+  --border-light: #3e3e38;
+  --success: #4ade80;
+  --error: #f87171;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(168, 164, 157, 0.15);
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(168, 164, 157, 0.3);
+}
+
+/* Prose overrides for chat markdown */
+.prose pre {
+  background: var(--bg-surface) !important;
+  border: 1px solid var(--border-light) !important;
+  border-radius: 8px !important;
+  padding: 16px !important;
+}
+
+.prose code {
+  color: var(--accent) !important;
+  font-size: 0.85em;
+}
+
+.prose pre code {
+  color: var(--text) !important;
+}
+
+.prose a {
+  color: var(--accent) !important;
+  text-decoration: underline;
+}
+
+.prose strong {
+  color: var(--text) !important;
+}
+
+.prose ul, .prose ol {
+  color: rgba(232, 228, 221, 0.85) !important;
+}
+
+.prose blockquote {
+  border-left-color: var(--accent) !important;
+  color: var(--text-secondary) !important;
+}
+
+/* Table styles */
+.prose table {
+  width: 100% !important;
+  border-collapse: collapse !important;
+  margin: 12px 0 !important;
+  font-size: 0.85em !important;
+  overflow-x: auto;
+  display: block;
+}
+
+.prose thead {
+  background: var(--bg-surface) !important;
+  border-bottom: 2px solid var(--border) !important;
+}
+
+.prose th {
+  color: var(--text) !important;
+  font-weight: 600 !important;
+  text-align: left !important;
+  padding: 10px 14px !important;
+  white-space: nowrap;
+}
+
+.prose td {
+  padding: 10px 14px !important;
+  border-bottom: 1px solid var(--border-light) !important;
+  color: rgba(232, 228, 221, 0.85) !important;
+  vertical-align: top;
+}
+
+.prose tr:last-child td {
+  border-bottom: none !important;
+}
+
+.prose tbody tr:hover {
+  background: rgba(58, 58, 54, 0.5) !important;
+}
+
+.prose h1, .prose h2, .prose h3, .prose h4 {
+  color: var(--text) !important;
+}
+
+.prose p {
+  color: rgba(232, 228, 221, 0.9) !important;
+}
+
+/* Animations */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.3s ease-out;
+}
+
+@keyframes pulse-dot {
+  0%, 100% { opacity: 0.4; }
+  50% { opacity: 1; }
+}
+
+.animate-pulse-dot {
+  animation: pulse-dot 1.4s ease-in-out infinite;
+}
+
+/* Section reveal animation */
+@keyframes sectionIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.animate-section-in {
+  animation: sectionIn 0.35s ease-out both;
+}
+
+/* Structured response styling */
+.structured-response {
+  min-height: 1em;
+}
+
+/* Streaming cursor */
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
+}
+
+.streaming-cursor::after {
+  content: "▍";
+  display: inline;
+  color: var(--accent);
+  animation: blink 0.8s step-end infinite;
+  margin-left: 2px;
+  font-weight: 300;
+}
+
+/* Smooth streaming text appearance */
+.streaming-content .prose p:last-child,
+.streaming-content .prose li:last-child,
+.streaming-content .prose pre:last-child {
+  animation: none;
+}
+
+.streaming-content {
+  min-height: 1.5em;
+}
+
+/* Textarea auto-resize — field-sizing has limited browser support, overflow-y is the fallback */
+textarea {
+  overflow-y: auto;
+  field-sizing: content;
+}
+
+/* Selection */
+::selection {
+  background: rgba(212, 165, 116, 0.3);
+}
+
+/* Modal overlay */
+.modal-overlay {
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(4px);
+}

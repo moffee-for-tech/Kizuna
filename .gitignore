@@ -1,0 +1,43 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+venv/
+.venv/
+*.egg
+dist/
+build/
+
+# Node
+node_modules/
+.next/
+out/
+
+# Environment
+.env
+.env.local
+.env.production
+!frontend/.env.production
+
+# Data
+backend/data/
+*.db
+
+# Docker
+docker-compose.override.yml
+.docker/
+
+# IDE
+.vscode/
+.idea/
+Visual Studio Code.app/
+*.swp
+*.swo
+.DS_Store
+
+# Logs
+*.log
+
+# Claude Code local state
+.claude/worktrees/
+.claude/settings.local.json
