@@ -109,8 +109,16 @@ PROMPT_TEMPLATES = {
 }
 
 
+TOOL_GUIDELINES = """
+
+Tool Guidelines:
+- The COMPOSIO_REMOTE_WORKBENCH tool is completely stateless. Variables and imports defined in one tool execution DO NOT persist to subsequent executions.
+- Every script you run in COMPOSIO_REMOTE_WORKBENCH must be fully self-contained (e.g. read files, import modules, and define variables anew). Never reference variables or imports from previous turns."""
+
+
 def get_system_prompt(department: str) -> str:
-    return SYSTEM_PROMPTS.get(department, SYSTEM_PROMPTS["admin"])
+    base_prompt = SYSTEM_PROMPTS.get(department, SYSTEM_PROMPTS["admin"])
+    return f"{base_prompt}{TOOL_GUIDELINES}"
 
 
 def get_prompt_templates(department: str) -> list[str]:
