@@ -1,4 +1,8 @@
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+let apiBaseUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+if (apiBaseUrl && !apiBaseUrl.startsWith("http://") && !apiBaseUrl.startsWith("https://") && !apiBaseUrl.startsWith("/")) {
+  apiBaseUrl = `https://${apiBaseUrl}`;
+}
+export const API_URL = apiBaseUrl;
 
 function authHeaders(): Record<string, string> {
   return { "Content-Type": "application/json" };

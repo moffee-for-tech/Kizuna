@@ -1,5 +1,10 @@
 import type { NextConfig } from "next";
 
+let nextPublicApiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+if (nextPublicApiUrl && !nextPublicApiUrl.startsWith("http://") && !nextPublicApiUrl.startsWith("https://") && !nextPublicApiUrl.startsWith("/")) {
+  nextPublicApiUrl = `https://${nextPublicApiUrl}`;
+}
+
 const nextConfig: NextConfig = {
   output: "standalone",
   async headers() {
@@ -14,7 +19,7 @@ const nextConfig: NextConfig = {
           { key: "Permissions-Policy", value: "camera=(), microphone=(), geolocation=()" },
           {
             key: "Content-Security-Policy",
-            value: `default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; connect-src 'self' ${process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"}; frame-ancestors 'none'; base-uri 'self'; form-action 'self';`,
+            value: `default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; connect-src 'self' ${nextPublicApiUrl}; frame-ancestors 'none'; base-uri 'self'; form-action 'self';`,
           },
         ],
       },
