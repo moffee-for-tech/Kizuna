@@ -35,7 +35,7 @@ class Settings(BaseSettings):
     RATE_LIMIT_PER_MINUTE: int = 30
 
     # CORS
-    CORS_ORIGINS: str = "http://localhost:3000,http://127.0.0.1:3000"
+    CORS_ORIGINS: str = "http://localhost:3000,http://127.0.0.1:3000,https://kizuna-eta-nine.vercel.app"
 
     # Frontend URL (for OAuth callbacks)
     FRONTEND_URL: str = "http://localhost:3000"
