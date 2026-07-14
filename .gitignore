@@ -41,3 +41,6 @@ Visual Studio Code.app/
 # Claude Code local state
 .claude/worktrees/
 .claude/settings.local.json
+
+# Ponytail
+ponytail/

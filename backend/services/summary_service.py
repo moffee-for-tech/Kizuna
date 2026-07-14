@@ -6,7 +6,7 @@ so the agent knows what was previously discussed without loading all messages.
 
 import logging
 
-from openai import OpenAI
+from openai import AsyncOpenAI
 from sqlalchemy.orm import Session as DBSession
 
 from agents.config import OPENROUTER_API_KEY, LLM_MODEL
@@ -55,11 +55,11 @@ async def update_session_summary(db: DBSession, session_id: str) -> None:
     )
 
     try:
-        client = OpenAI(
+        client = AsyncOpenAI(
             api_key=OPENROUTER_API_KEY,
             base_url="https://openrouter.ai/api/v1",
         )
-        response = client.chat.completions.create(
+        response = await client.chat.completions.create(
             model=LLM_MODEL,
             messages=[
                 {

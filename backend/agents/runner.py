@@ -108,14 +108,32 @@ async def run_agent(
         if agent_tools:
             try:
                 from composio import Composio
-                from agents.tools import DEPARTMENT_TOOLKITS, _SKIP_TOOLKITS
+                from agents.tools import DEPARTMENT_TOOLKITS, _SKIP_TOOLKITS, _CUSTOM_AUTH_TOOLKITS
                 
                 toolkits = DEPARTMENT_TOOLKITS.get(department)
                 if toolkits:
                     toolkits = [tk for tk in toolkits if tk not in _SKIP_TOOLKITS]
                 
                 composio = Composio()
-                session = composio.create(user_id=user_id, toolkits=toolkits)
+                connected_slugs = set()
+                try:
+                    accounts = composio.connected_accounts.list(
+                        user_ids=[user_id],
+                        statuses=["ACTIVE"],
+                    )
+                    connected_slugs = {item.toolkit.slug for item in accounts.items}
+                except Exception as conn_err:
+                    logger.warning(f"Failed to check connected accounts in runner: {conn_err}")
+
+                toolkits_to_load = []
+                for tk in toolkits:
+                    if tk in _CUSTOM_AUTH_TOOLKITS:
+                        if tk in connected_slugs:
+                            toolkits_to_load.append(tk)
+                    else:
+                        toolkits_to_load.append(tk)
+
+                session = composio.create(user_id=user_id, toolkits=toolkits_to_load)
                 composio_session_id = session.session_id
             except Exception as e:
                 logger.warning(f"Failed to initialize Composio session in runner: {e}")
@@ -307,14 +325,32 @@ async def run_agent_streaming(
         if agent_tools:
             try:
                 from composio import Composio
-                from agents.tools import DEPARTMENT_TOOLKITS, _SKIP_TOOLKITS
+                from agents.tools import DEPARTMENT_TOOLKITS, _SKIP_TOOLKITS, _CUSTOM_AUTH_TOOLKITS
                 
                 toolkits = DEPARTMENT_TOOLKITS.get(department)
                 if toolkits:
                     toolkits = [tk for tk in toolkits if tk not in _SKIP_TOOLKITS]
                 
                 composio = Composio()
-                session = composio.create(user_id=user_id, toolkits=toolkits)
+                connected_slugs = set()
+                try:
+                    accounts = composio.connected_accounts.list(
+                        user_ids=[user_id],
+                        statuses=["ACTIVE"],
+                    )
+                    connected_slugs = {item.toolkit.slug for item in accounts.items}
+                except Exception as conn_err:
+                    logger.warning(f"Failed to check connected accounts in streaming runner: {conn_err}")
+
+                toolkits_to_load = []
+                for tk in toolkits:
+                    if tk in _CUSTOM_AUTH_TOOLKITS:
+                        if tk in connected_slugs:
+                            toolkits_to_load.append(tk)
+                    else:
+                        toolkits_to_load.append(tk)
+
+                session = composio.create(user_id=user_id, toolkits=toolkits_to_load)
                 composio_session_id = session.session_id
             except Exception as e:
                 logger.warning(f"Failed to initialize Composio session in streaming runner: {e}")
