@@ -47,6 +47,13 @@ class Settings(BaseSettings):
 
 settings = Settings()
 
+# Dynamic production overrides for cross-site cookie authentication
+if settings.ENVIRONMENT == "production":
+    settings.COOKIE_SECURE = True
+    if settings.COOKIE_SAMESITE == "lax":
+        settings.COOKIE_SAMESITE = "none"
+
+
 
 def _validate_settings():
     logger = logging.getLogger("triton.config")

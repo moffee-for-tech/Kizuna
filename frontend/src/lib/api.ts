@@ -4,8 +4,25 @@ if (apiBaseUrl && !apiBaseUrl.startsWith("http://") && !apiBaseUrl.startsWith("h
 }
 export const API_URL = apiBaseUrl;
 
+export function setLocalToken(token: string | null) {
+  if (typeof window !== "undefined") {
+    if (token) {
+      localStorage.setItem("kizuna_token", token);
+    } else {
+      localStorage.removeItem("kizuna_token");
+    }
+  }
+}
+
 function authHeaders(): Record<string, string> {
-  return { "Content-Type": "application/json" };
+  const headers: Record<string, string> = { "Content-Type": "application/json" };
+  if (typeof window !== "undefined") {
+    const token = localStorage.getItem("kizuna_token");
+    if (token) {
+      headers["Authorization"] = `Bearer ${token}`;
+    }
+  }
+  return headers;
 }
 
 // All requests include cookies for httpOnly auth
@@ -89,7 +106,7 @@ export interface StructuredResponse {
 export function streamMessage(message: string, sessionId?: string, documentContext?: string, documentName?: string, signal?: AbortSignal) {
   return fetch(`${API_URL}/api/chat/stream`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: authHeaders(),
     body: JSON.stringify({ message, session_id: sessionId, document_context: documentContext, document_name: documentName }),
     signal,
     ...fetchOpts,
@@ -130,7 +147,7 @@ export async function confirmAction(
 }> {
   const res = await fetch(`${API_URL}/api/chat/confirm/${encodeURIComponent(actionId)}`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: authHeaders(),
     body: JSON.stringify({ approved, overrides }),
     ...fetchOpts,
   });

@@ -1,7 +1,7 @@
 "use client";
 
 import React, { createContext, useContext, useState, useEffect, ReactNode } from "react";
-import { logoutApi, API_URL } from "@/lib/api";
+import { logoutApi, API_URL, setLocalToken } from "@/lib/api";
 
 interface User {
   id: string;
@@ -38,7 +38,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 5000); // 5s timeout
 
+    const localToken = typeof window !== "undefined" ? localStorage.getItem("kizuna_token") : null;
+    const headers: Record<string, string> = {};
+    if (localToken) {
+      headers["Authorization"] = `Bearer ${localToken}`;
+    }
+
     fetch(`${API_URL}/api/auth/me`, {
+      headers,
       credentials: "include",
       signal: controller.signal,
     })
@@ -80,6 +87,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (data.requires_2fa) {
       return { requires2fa: true, challengeToken: data.challenge_token };
     }
+    setLocalToken(data.access_token);
     setToken("cookie");
     setUser(data.user);
     return { requires2fa: false };
@@ -97,6 +105,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       throw new Error(err.detail || "2FA verification failed");
     }
     const data = await res.json();
+    setLocalToken(data.access_token);
     setToken("cookie");
     setUser(data.user);
   };
@@ -115,6 +124,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
 
     const data = await res.json();
+    setLocalToken(data.access_token);
     setToken("cookie");
     setUser(data.user);
   };
@@ -125,6 +135,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } catch {
       // Clear client state regardless
     }
+    setLocalToken(null);
     setToken(null);
     setUser(null);
   };
