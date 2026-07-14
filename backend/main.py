@@ -142,9 +142,8 @@ async def deep_health_check():
 
     try:
         from sqlalchemy import text
-        db = SessionLocal()
-        db.execute(text("SELECT 1"))
-        db.close()
+        with SessionLocal() as db:
+            db.execute(text("SELECT 1"))
         checks["database"] = "healthy"
     except Exception as e:
         logger.error(f"DB health check failed: {e}")
