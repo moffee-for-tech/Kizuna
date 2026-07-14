@@ -71,7 +71,7 @@ export default function LoginPage() {
       <div className="w-full max-w-sm">
         <div className="text-center mb-10">
           <h1 className="text-3xl font-semibold text-[#e8e4dd] tracking-tight">
-            Polaris
+            Kizuna
           </h1>
           <p className="text-[#a8a49d] text-sm mt-2">AI-Powered Chat Platform</p>
         </div>

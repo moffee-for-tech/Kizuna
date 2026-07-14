@@ -48,7 +48,7 @@ limiter = Limiter(key_func=get_remote_address)
 def _set_auth_cookie(response: Response, token: str) -> None:
     """Set httpOnly secure cookie with JWT."""
     response.set_cookie(
-        key="triton_token",
+        key="kizuna_token",
         value=token,
         httponly=True,
         secure=settings.COOKIE_SECURE,
@@ -62,7 +62,7 @@ def _set_auth_cookie(response: Response, token: str) -> None:
 def _clear_auth_cookie(response: Response) -> None:
     """Clear the auth cookie."""
     response.delete_cookie(
-        key="triton_token",
+        key="kizuna_token",
         httponly=True,
         secure=settings.COOKIE_SECURE,
         samesite=settings.COOKIE_SAMESITE,

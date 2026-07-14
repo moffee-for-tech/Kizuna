@@ -1,4 +1,4 @@
-"""Triton AI Chat Platform — Production-grade FastAPI application."""
+"""Kizuna AI Chat Platform — Production-grade FastAPI application."""
 
 import logging
 import sys
@@ -23,7 +23,7 @@ logging.basicConfig(
     datefmt="%Y-%m-%d %H:%M:%S",
     handlers=[logging.StreamHandler(sys.stdout)],
 )
-logger = logging.getLogger("triton")
+logger = logging.getLogger("kizuna")
 
 # --- Rate limiter ---
 limiter = Limiter(key_func=get_remote_address)
@@ -34,18 +34,18 @@ is_production = settings.ENVIRONMENT == "production"
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Startup / shutdown lifecycle."""
-    logger.info("Triton AI Chat Platform starting...")
+    logger.info("Kizuna AI Chat Platform starting...")
 
     # Initialize database tables
     init_db()
     logger.info("Database initialized")
 
     yield
-    logger.info("Triton shutting down...")
+    logger.info("Kizuna shutting down...")
 
 
 app = FastAPI(
-    title="Triton AI Chat Platform",
+    title="Kizuna AI Chat Platform",
     description="Five-role AI chat platform with Gemini LLM via OpenRouter, multi-agent system, and Composio tools",
     version="1.0.0",
     lifespan=lifespan,

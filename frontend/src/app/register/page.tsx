@@ -68,7 +68,7 @@ export default function RegisterPage() {
     <div className="min-h-screen flex items-center justify-center p-4">
       <div className="w-full max-w-sm">
         <div className="text-center mb-10">
-          <h1 className="text-3xl font-semibold text-[#e8e4dd] tracking-tight">Polaris</h1>
+          <h1 className="text-3xl font-semibold text-[#e8e4dd] tracking-tight">Kizuna</h1>
           <p className="text-[#a8a49d] text-sm mt-2">Create your account</p>
         </div>
 

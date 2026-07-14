@@ -6,7 +6,7 @@ import { AuthProvider } from "@/lib/auth-context";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "Polaris AI — Intelligent Chat Platform",
+  title: "Kizuna AI — Intelligent Chat Platform",
   description: "Five-role AI chat platform with department-level access control",
 };
 

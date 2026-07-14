@@ -25,7 +25,7 @@ async def get_current_user(
     token = None
 
     # Priority 1: httpOnly cookie
-    cookie_token = request.cookies.get("triton_token")
+    cookie_token = request.cookies.get("kizuna_token")
     if cookie_token:
         token = cookie_token
 

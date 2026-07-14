@@ -630,7 +630,7 @@ export default function ChatPage() {
                 <div key={msg.id} className="animate-fade-in">
                   <div className="flex items-center gap-2 mb-1.5 mt-5">
                     <span className="text-xs font-medium" style={{ color: msg.role === "assistant" ? theme.accent : "#a8a49d" }}>
-                      {msg.role === "assistant" ? "Polaris" : "You"}
+                      {msg.role === "assistant" ? "Kizuna" : "You"}
                     </span>
                   </div>
                   <div className={`rounded-xl px-4 py-3 ${msg.role === "user" ? "bg-[#3a3a36] text-[#e8e4dd]" : "bg-[#353531] border border-[#3e3e38] text-[#d8d4cd]"}`}>
@@ -830,7 +830,7 @@ export default function ChatPage() {
                   value={input}
                   onChange={(e) => setInput(e.target.value)}
                   onKeyDown={handleKeyDown}
-                  placeholder={attachment ? "Ask about this document..." : "Message Polaris..."}
+                  placeholder={attachment ? "Ask about this document..." : "Message Kizuna..."}
                   rows={1}
                   className="w-full resize-none px-4 pt-3 pb-1 bg-transparent text-[#e8e4dd] placeholder-[#7a776f] focus:outline-none text-sm max-h-32"
                   style={{ minHeight: "40px" }}
@@ -875,7 +875,7 @@ export default function ChatPage() {
                 </button>
               </div>
               <p className="text-sm text-[#a8a49d] mb-4">
-                Connect your tools to Polaris. Authentication is powered by Composio.
+                Connect your tools to Kizuna. Authentication is powered by Composio.
               </p>
             </div>
             <div className="flex-1 overflow-y-auto px-6 pb-6">
