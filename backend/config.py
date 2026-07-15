@@ -26,7 +26,7 @@ class Settings(BaseSettings):
     COOKIE_SAMESITE: str = "lax"  # "lax" for same-site, "none" for cross-site (requires Secure)
 
     # Database
-    DATABASE_URL: str = "sqlite:///./data/triton.db"
+    DATABASE_URL: str = "sqlite:///./data/kizuna.db"
 
     # Uploads
     UPLOAD_DIR: str = "./data/uploads"
@@ -56,7 +56,7 @@ if settings.ENVIRONMENT == "production":
 
 
 def _validate_settings():
-    logger = logging.getLogger("triton.config")
+    logger = logging.getLogger("kizuna.config")
     warnings = []
     errors = []
     if not settings.OPENROUTER_API_KEY:

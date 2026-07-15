@@ -87,6 +87,8 @@ class ChatRequest(BaseModel):
     session_id: Optional[str] = Field(None, max_length=36)
     document_context: Optional[str] = Field(None, max_length=50_000)
     document_name: Optional[str] = Field(None, max_length=255)
+    active_skill: Optional[str] = Field(None, max_length=50)
+    lazy_senior_mode: Optional[str] = Field(None, max_length=20)
 
 
 class ChatMessage(BaseModel):
@@ -109,6 +111,8 @@ class SessionResponse(BaseModel):
     created_at: str
     updated_at: str
     message_count: int = 0
+    active_skill: Optional[str] = None
+    lazy_senior_mode: Optional[str] = None
 
 
 class SessionDetailResponse(SessionResponse):

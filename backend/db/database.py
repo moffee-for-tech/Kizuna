@@ -49,12 +49,14 @@ def init_db():
             _migrate_user_connectors(bind=conn)
             _migrate_session_document(bind=conn)
             _migrate_session_summary(bind=conn)
+            _migrate_session_skills(bind=conn)
             _migrate_user_totp(bind=conn)
     else:
         Base.metadata.create_all(bind=engine)
         _migrate_user_connectors()
         _migrate_session_document()
         _migrate_session_summary()
+        _migrate_session_skills()
         _migrate_user_totp()
 
 
@@ -75,6 +77,8 @@ _ALLOWED_SESSION_COLS = {
     "document_name": "VARCHAR(255)",
     "session_summary": "TEXT",
     "summary_msg_count": _INT_DEFAULT,
+    "active_skill": "VARCHAR(50)",
+    "lazy_senior_mode": "VARCHAR(20)",
 }
 
 _ALLOWED_USER_COLS = {
@@ -170,4 +174,23 @@ def _migrate_user_totp(bind=None):
     else:
         with engine.begin() as conn:
             _safe_add_columns(conn, "users", new_cols, _ALLOWED_USER_COLS, existing_cols)
+
+
+def _migrate_session_skills(bind=None):
+    """Add active_skill and ponytail_mode columns to chat_sessions if missing."""
+    from sqlalchemy import inspect as sa_inspect
+    target = bind if bind is not None else engine
+    insp = sa_inspect(target)
+    if "chat_sessions" not in insp.get_table_names():
+        return
+    existing_cols = {c["name"] for c in insp.get_columns("chat_sessions")}
+    new_cols = {
+        "active_skill": "VARCHAR(50)",
+        "lazy_senior_mode": "VARCHAR(20)",
+    }
+    if bind is not None:
+        _safe_add_columns(bind, "chat_sessions", new_cols, _ALLOWED_SESSION_COLS, existing_cols)
+    else:
+        with engine.begin() as conn:
+            _safe_add_columns(conn, "chat_sessions", new_cols, _ALLOWED_SESSION_COLS, existing_cols)
 

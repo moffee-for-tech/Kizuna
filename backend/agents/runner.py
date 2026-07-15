@@ -22,6 +22,8 @@ from agents.destructive_tools import (
     build_full_action_details,
     META_EXECUTE_SLUG,
 )
+from services.skills_service import load_skill_instructions
+from agents.workspace_tools import WORKSPACE_TOOLS_SCHEMAS, execute_workspace_tool
 
 MAX_RETRIES = 3
 
@@ -71,13 +73,33 @@ async def run_agent(
     session_id: str,
     conversation_history: list[dict],
     session_summary: Optional[str] = None,
+    active_skill: Optional[str] = None,
+    lazy_senior_mode: Optional[str] = "full",
 ) -> dict:
     """Execute an agent with OpenRouter using OpenAI SDK and return structured response."""
+
+    # Load skill instructions if active
+    if active_skill and active_skill != "none":
+        skill_prompt = load_skill_instructions(active_skill, lazy_senior_mode)
+        if skill_prompt:
+            agent_instruction = f"{agent_instruction}\n\n{skill_prompt}"
 
     # Build context from session summary
     full_message = message
     if session_summary:
         full_message = f"[Previous session context]: {session_summary}\n\n{message}"
+
+    # Combine tools: include workspace tools if skill is active
+    llm_tools = list(agent_tools) if agent_tools else []
+    
+    # Always include workspace_get_skills_registry so agent can find it agentically
+    registry_schema = next((s for s in WORKSPACE_TOOLS_SCHEMAS if s["function"]["name"] == "workspace_get_skills_registry"), None)
+    if registry_schema:
+        llm_tools.append(registry_schema)
+
+    if active_skill and active_skill != "none":
+        other_schemas = [s for s in WORKSPACE_TOOLS_SCHEMAS if s["function"]["name"] != "workspace_get_skills_registry"]
+        llm_tools.extend(other_schemas)
 
     try:
         client = AsyncOpenAI(
@@ -144,8 +166,8 @@ async def run_agent(
                     return await client.chat.completions.create(
                         model=LLM_MODEL,
                         messages=messages,
-                        tools=agent_tools if agent_tools else None,
-                        tool_choice="auto" if agent_tools else None,
+                        tools=llm_tools if llm_tools else None,
+                        tool_choice="auto" if llm_tools else None,
                         temperature=0.7,
                     )
                 except Exception as e:
@@ -195,6 +217,29 @@ async def run_agent(
                 except Exception as e:
                     tool_args = {}
                     logger.warning(f"Failed to parse tool arguments: {e}")
+
+                # Intercept local workspace tools
+                if tool_name.startswith("workspace_"):
+                    tool_entry = {
+                        "name": tool_name.replace("_", " ").title(),
+                        "raw_name": tool_name,
+                        "status": "running",
+                    }
+                    tool_calls.append(tool_entry)
+                    try:
+                        logger.info(f"Executing workspace tool {tool_name} with args {tool_args}")
+                        result_content = execute_workspace_tool(tool_name, tool_args)
+                        tool_entry["status"] = "success"
+                    except Exception as e:
+                        logger.error(f"Error executing workspace tool {tool_name}: {e}", exc_info=True)
+                        tool_entry["status"] = "failed"
+                        result_content = f"Error: {str(e)}"
+                    messages.append({
+                        "role": "tool",
+                        "tool_call_id": tool_call.id,
+                        "content": result_content,
+                    })
+                    continue
 
                 # Check for permission gate (destructive tools)
                 slug_upper = tool_name.upper()
@@ -281,6 +326,8 @@ async def run_agent_streaming(
     session_id: str,
     conversation_history: list[dict],
     session_summary: Optional[str] = None,
+    active_skill: Optional[str] = None,
+    lazy_senior_mode: Optional[str] = "full",
 ) -> AsyncIterator[dict]:
     """Streaming version — yields events as the agent executes.
 
@@ -291,6 +338,12 @@ async def run_agent_streaming(
     """
     logger.info(f"run_agent_streaming starting for session={session_id}")
 
+    # Load skill instructions if active
+    if active_skill and active_skill != "none":
+        skill_prompt = load_skill_instructions(active_skill, lazy_senior_mode)
+        if skill_prompt:
+            agent_instruction = f"{agent_instruction}\n\n{skill_prompt}"
+
     # Build context from session summary
     full_message = message
     if session_summary:
@@ -298,6 +351,18 @@ async def run_agent_streaming(
 
     response_text = ""
     tool_calls: list[dict] = []
+
+    # Combine tools: include workspace tools if skill is active
+    llm_tools = list(agent_tools) if agent_tools else []
+    
+    # Always include workspace_get_skills_registry so agent can find it agentically
+    registry_schema = next((s for s in WORKSPACE_TOOLS_SCHEMAS if s["function"]["name"] == "workspace_get_skills_registry"), None)
+    if registry_schema:
+        llm_tools.append(registry_schema)
+
+    if active_skill and active_skill != "none":
+        other_schemas = [s for s in WORKSPACE_TOOLS_SCHEMAS if s["function"]["name"] != "workspace_get_skills_registry"]
+        llm_tools.extend(other_schemas)
 
     try:
         client = AsyncOpenAI(
@@ -361,8 +426,8 @@ async def run_agent_streaming(
                     return await client.chat.completions.create(
                         model=LLM_MODEL,
                         messages=messages,
-                        tools=agent_tools if agent_tools else None,
-                        tool_choice="auto" if agent_tools else None,
+                        tools=llm_tools if llm_tools else None,
+                        tool_choice="auto" if llm_tools else None,
                         temperature=0.7,
                     )
                 except Exception as e:
@@ -412,6 +477,37 @@ async def run_agent_streaming(
                 except Exception as e:
                     tool_args = {}
                     logger.warning(f"Failed to parse tool arguments: {e}")
+
+                # Intercept local workspace tools
+                if tool_name.startswith("workspace_"):
+                    tool_entry = {
+                        "name": tool_name.replace("_", " ").title(),
+                        "raw_name": tool_name,
+                        "status": "running",
+                    }
+                    tool_calls.append(tool_entry)
+                    
+                    logger.info(f"Yielding workspace tool_start: {tool_entry['name']}")
+                    yield {"type": "tool_start", "tool": dict(tool_entry)}
+                    
+                    try:
+                        logger.info(f"Executing workspace tool {tool_name} with args {tool_args}")
+                        result_content = execute_workspace_tool(tool_name, tool_args)
+                        tool_entry["status"] = "success"
+                    except Exception as e:
+                        logger.error(f"Error executing workspace tool {tool_name}: {e}", exc_info=True)
+                        tool_entry["status"] = "failed"
+                        result_content = f"Error: {str(e)}"
+                        
+                    logger.info(f"Yielding workspace tool_end: {tool_entry['name']} status={tool_entry['status']}")
+                    yield {"type": "tool_end", "tool": dict(tool_entry)}
+                    
+                    messages.append({
+                        "role": "tool",
+                        "tool_call_id": tool_call.id,
+                        "content": result_content,
+                    })
+                    continue
 
                 # Check for permission gate (destructive tools)
                 slug_upper = tool_name.upper()

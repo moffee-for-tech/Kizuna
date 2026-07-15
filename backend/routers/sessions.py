@@ -37,6 +37,8 @@ async def create_new_session(
         created_at=session.created_at.isoformat() if session.created_at else "",
         updated_at=session.updated_at.isoformat() if session.updated_at else "",
         message_count=len(session.messages),
+        active_skill=session.active_skill,
+        lazy_senior_mode=session.lazy_senior_mode,
     )
 
 
@@ -56,6 +58,8 @@ async def get_sessions(
             created_at=s.created_at.isoformat() if s.created_at else "",
             updated_at=s.updated_at.isoformat() if s.updated_at else "",
             message_count=len(s.messages),
+            active_skill=s.active_skill,
+            lazy_senior_mode=s.lazy_senior_mode,
         )
         for s in sessions
     ]
@@ -88,6 +92,8 @@ async def get_session_detail(
         created_at=session.created_at.isoformat() if session.created_at else "",
         updated_at=session.updated_at.isoformat() if session.updated_at else "",
         message_count=len(session.messages),
+        active_skill=session.active_skill,
+        lazy_senior_mode=session.lazy_senior_mode,
         messages=[
             ChatMessage(
                 role=m.role,

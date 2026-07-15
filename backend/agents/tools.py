@@ -29,7 +29,7 @@ from agents.destructive_tools import (
 )
 
 logger = logging.getLogger(__name__)
-audit_log = logging.getLogger("triton.audit.composio")
+audit_log = logging.getLogger("kizuna.audit.composio")
 
 
 class ConfirmationRequired(Exception):

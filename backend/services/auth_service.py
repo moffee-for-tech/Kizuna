@@ -15,7 +15,7 @@ from sqlalchemy.orm import Session
 from config import settings
 from db.models import User, TokenBlacklist
 
-logger = logging.getLogger("triton.auth")
+logger = logging.getLogger("kizuna.auth")
 
 
 # --- Password hashing (argon2-like using pbkdf2_sha256 - stdlib, no extra dep) ---

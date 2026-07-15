@@ -56,6 +56,8 @@ class ChatSession(Base):
     document_name = Column(String(255), nullable=True)
     session_summary = Column(Text, nullable=True)
     summary_msg_count = Column(Integer, default=0)
+    active_skill = Column(String(50), nullable=True)
+    lazy_senior_mode = Column(String(20), nullable=True, default="full")
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 

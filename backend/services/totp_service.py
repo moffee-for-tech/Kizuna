@@ -21,9 +21,9 @@ from cryptography.fernet import Fernet, InvalidToken
 
 from config import settings
 
-logger = logging.getLogger("triton.totp")
+logger = logging.getLogger("kizuna.totp")
 
-ISSUER = "Triton AI"
+ISSUER = "Kizuna AI"
 BACKUP_CODE_COUNT = 8
 BACKUP_CODE_BYTES = 5  # ~10 hex chars per code
 BACKUP_HASH_ITERATIONS = 200_000
@@ -33,7 +33,7 @@ def _fernet() -> Fernet:
     """Derive a Fernet key from JWT_SECRET via SHA-256 (32 bytes → urlsafe-b64)."""
     if not settings.JWT_SECRET:
         raise RuntimeError("JWT_SECRET not configured — cannot encrypt TOTP secret")
-    digest = hashlib.sha256(b"triton-totp-v1|" + settings.JWT_SECRET.encode()).digest()
+    digest = hashlib.sha256(b"kizuna-totp-v1|" + settings.JWT_SECRET.encode()).digest()
     return Fernet(base64.urlsafe_b64encode(digest))
 
 

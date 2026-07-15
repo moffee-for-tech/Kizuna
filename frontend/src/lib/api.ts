@@ -65,7 +65,14 @@ export async function deleteSession(id: string) {
 
 // --- Chat ---
 
-export async function sendMessage(message: string, sessionId?: string, documentContext?: string, documentName?: string): Promise<{
+export async function sendMessage(
+  message: string,
+  sessionId?: string,
+  documentContext?: string,
+  documentName?: string,
+  activeSkill?: string,
+  lazySeniorMode?: string
+): Promise<{
   session_id: string;
   message: string;
   structured: StructuredResponse;
@@ -74,7 +81,14 @@ export async function sendMessage(message: string, sessionId?: string, documentC
   const res = await fetch(`${API_URL}/api/chat`, {
     method: "POST",
     headers: authHeaders(),
-    body: JSON.stringify({ message, session_id: sessionId, document_context: documentContext, document_name: documentName }),
+    body: JSON.stringify({
+      message,
+      session_id: sessionId,
+      document_context: documentContext,
+      document_name: documentName,
+      active_skill: activeSkill,
+      lazy_senior_mode: lazySeniorMode,
+    }),
     ...fetchOpts,
   });
   if (!res.ok) {
@@ -103,14 +117,35 @@ export interface StructuredResponse {
   tool_calls?: ToolCall[];
 }
 
-export function streamMessage(message: string, sessionId?: string, documentContext?: string, documentName?: string, signal?: AbortSignal) {
+export function streamMessage(
+  message: string,
+  sessionId?: string,
+  documentContext?: string,
+  documentName?: string,
+  signal?: AbortSignal,
+  activeSkill?: string,
+  lazySeniorMode?: string
+) {
   return fetch(`${API_URL}/api/chat/stream`, {
     method: "POST",
     headers: authHeaders(),
-    body: JSON.stringify({ message, session_id: sessionId, document_context: documentContext, document_name: documentName }),
+    body: JSON.stringify({
+      message,
+      session_id: sessionId,
+      document_context: documentContext,
+      document_name: documentName,
+      active_skill: activeSkill,
+      lazy_senior_mode: lazySeniorMode,
+    }),
     signal,
     ...fetchOpts,
   });
+}
+
+export async function getSkills(): Promise<{ skills: Array<{ id: string; name: string; description: string }> }> {
+  const res = await fetch(`${API_URL}/api/chat/skills`, { headers: authHeaders(), ...fetchOpts });
+  if (!res.ok) throw new Error("Failed to fetch skills");
+  return res.json();
 }
 
 // --- Permission confirmation ---

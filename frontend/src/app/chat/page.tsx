@@ -17,6 +17,7 @@ import {
   getConnectorAuthUrl,
   getConnectorStatus,
   disconnectConnector,
+  getSkills,
   type PendingAction,
   type StructuredResponse,
   type StructuredSection,
@@ -60,7 +61,82 @@ export default function ChatPage() {
   const [showConnectorsModal, setShowConnectorsModal] = useState(false);
   const [showSettingsModal, setShowSettingsModal] = useState(false);
   const [connectingToolkit, setConnectingToolkit] = useState<string | null>(null);
+  const [skills, setSkills] = useState<Array<{ id: string; name: string; description: string }>>([]);
+  const [activeSkill, setActiveSkill] = useState<string | null>(null);
+  const [lazySeniorMode, setLazySeniorMode] = useState<string>("full");
   const [uploadError, setUploadError] = useState<string | null>(null);
+  
+  interface SlashCommand {
+    name: string;
+    description: string;
+    value: string;
+  }
+
+  const ROOT_COMMANDS: SlashCommand[] = [
+    { name: "/lazy-senior ...", description: "Configure or execute Lazy Senior developer commands", value: "lazy-senior" }
+  ];
+
+  const LAZY_SENIOR_COMMANDS: SlashCommand[] = [
+    { name: "/lazy-senior lite", description: "Lite Mode (standard-library-first)", value: "/lazy-senior lite" },
+    { name: "/lazy-senior full", description: "Full Mode (aggressive simplification)", value: "/lazy-senior full" },
+    { name: "/lazy-senior ultra", description: "Ultra Mode (extreme deletion of code)", value: "/lazy-senior ultra" },
+    { name: "/lazy-senior off", description: "Deactivate Lazy Senior mode", value: "/lazy-senior off" },
+    { name: "/lazy-senior-review", description: "Review workspace changes for over-engineering", value: "/lazy-senior-review" },
+    { name: "/lazy-senior-audit", description: "Audit whole workspace for design bloat", value: "/lazy-senior-audit" },
+    { name: "/lazy-senior-debt", description: "Build technical debt ledger", value: "/lazy-senior-debt" },
+    { name: "/lazy-senior-gain", description: "Show scoreboard & impact benchmark", value: "/lazy-senior-gain" },
+    { name: "/lazy-senior-help", description: "Show reference card & help", value: "/lazy-senior-help" },
+  ];
+
+  const [showSlashMenu, setShowSlashMenu] = useState(false);
+  const [slashMenuIndex, setSlashMenuIndex] = useState(0);
+  const [slashMenuLevel, setSlashMenuLevel] = useState<"root" | "lazy-senior">("root");
+  const [filteredSlashCommands, setFilteredSlashCommands] = useState<SlashCommand[]>(ROOT_COMMANDS);
+
+  const selectSlashCommand = (cmd: SlashCommand) => {
+    if (cmd.value === "lazy-senior") {
+      setInput("/lazy-senior ");
+      setSlashMenuLevel("lazy-senior");
+      setFilteredSlashCommands(LAZY_SENIOR_COMMANDS);
+      setSlashMenuIndex(0);
+      setShowSlashMenu(true);
+      if (inputRef.current) {
+        inputRef.current.focus();
+      }
+    } else {
+      setInput(cmd.value);
+      setShowSlashMenu(false);
+      if (inputRef.current) {
+        inputRef.current.focus();
+      }
+    }
+  };
+
+  const handleInputChange = (val: string) => {
+    setInput(val);
+    if (val === "/" || val.startsWith("/")) {
+      const query = val.toLowerCase();
+      if (query.startsWith("/lazy-senior") && query !== "/lazy-senior") {
+        setSlashMenuLevel("lazy-senior");
+        const filtered = LAZY_SENIOR_COMMANDS.filter(cmd => cmd.value.toLowerCase().startsWith(query));
+        setFilteredSlashCommands(filtered);
+        setShowSlashMenu(filtered.length > 0);
+      } else if (query === "/lazy-senior") {
+        setSlashMenuLevel("lazy-senior");
+        setFilteredSlashCommands(LAZY_SENIOR_COMMANDS);
+        setShowSlashMenu(true);
+      } else {
+        setSlashMenuLevel("root");
+        const filtered = ROOT_COMMANDS.filter(cmd => cmd.name.toLowerCase().startsWith(query));
+        setFilteredSlashCommands(filtered);
+        setShowSlashMenu(filtered.length > 0);
+      }
+      setSlashMenuIndex(0);
+    } else {
+      setShowSlashMenu(false);
+    }
+  };
+
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const msgKeyCounter = useRef(0);
@@ -151,7 +227,7 @@ export default function ChatPage() {
   const nextMsgId = () => `msg-${++msgKeyCounter.current}`;
   const theme = user ? DEPARTMENT_THEMES[user.department] || DEPARTMENT_THEMES.admin : DEPARTMENT_THEMES.admin;
   useEffect(() => { if (!loading && !user) router.push("/"); }, [user, loading, router]);
-  useEffect(() => { if (token) { loadSessions(); loadTemplates(); loadConnectors(); } }, [token]);
+  useEffect(() => { if (token) { loadSessions(); loadTemplates(); loadConnectors(); loadSkills(); } }, [token]);
 
   // Scroll to bottom only for new messages, not when loading old sessions
   useEffect(() => {
@@ -185,6 +261,7 @@ export default function ChatPage() {
   const loadSessions = async () => { try { setSessions(await getSessions()); } catch (err) { console.error("Failed to load sessions:", err); } };
   const loadTemplates = async () => { try { const d = await getPromptTemplates(); setTemplates(d.templates || []); } catch (err) { console.error("Failed to load templates:", err); } };
   const loadConnectors = async () => { try { const d = await getConnectors(); setConnectors(d.connectors || []); } catch (err) { console.error("Failed to load connectors:", err); } };
+  const loadSkills = async () => { try { const d = await getSkills(); setSkills(d.skills || []); } catch (err) { console.error("Failed to load skills:", err); } };
 
   const cleanupPolling = () => {
     if (pollIntervalRef.current) { clearInterval(pollIntervalRef.current); pollIntervalRef.current = null; }
@@ -235,23 +312,56 @@ export default function ChatPage() {
 
   const loadSession = async (sessionId: string) => {
     isFirstLoad.current = true;
-    try { const d = await getSession(sessionId); setActiveSessionId(sessionId); setMessages((d.messages || []).map((m: any) => ({ ...m, id: m.id || nextMsgId() }))); setShowSessionsPanel(false); } catch (err) { console.error("Failed to load session:", err); }
+    try {
+      const d = await getSession(sessionId);
+      setActiveSessionId(sessionId);
+      setMessages((d.messages || []).map((m: any) => ({ ...m, id: m.id || nextMsgId() })));
+      setActiveSkill(d.active_skill || null);
+      setLazySeniorMode(d.lazy_senior_mode || "full");
+      setShowSessionsPanel(false);
+    } catch (err) {
+      console.error("Failed to load session:", err);
+    }
   };
 
-  const handleNewChat = () => { setActiveSessionId(null); setMessages([]); setShowSessionsPanel(false); inputRef.current?.focus(); };
+  const handleNewChat = () => {
+    setActiveSessionId(null);
+    setMessages([]);
+    setActiveSkill(null);
+    setLazySeniorMode("full");
+    setShowSessionsPanel(false);
+    inputRef.current?.focus();
+  };
 
   const handleDeleteSession = async (sessionId: string) => {
     try { await deleteSession(sessionId); if (activeSessionId === sessionId) handleNewChat(); loadSessions(); } catch (err) { console.error("Failed to delete session:", err); }
   };
 
   const handleSend = useCallback(async () => {
-    if (!input.trim() || isStreaming) return;
-    const userMessage = input.trim();
+    if (!(input || "").trim() || isStreaming) return;
+    const userMessage = (input || "").trim();
     const currentAttachment = attachment;
     setInput("");
     setAttachment(null);
     setIsStreaming(true);
     isFirstLoad.current = false;
+
+    // Sync lazy senior mode locally if user typed /lazy-senior [mode]
+    if (userMessage.toLowerCase().startsWith("/lazy-senior")) {
+      const parts = userMessage.split(/\s+/);
+      if (parts.length > 1) {
+        const mode = parts[1].trim().toLowerCase();
+        if (mode === "off") {
+          setActiveSkill(null);
+        } else if (["lite", "full", "ultra"].includes(mode)) {
+          setActiveSkill("lazy-senior");
+          setLazySeniorMode(mode);
+        }
+      } else {
+        setActiveSkill("lazy-senior");
+        setLazySeniorMode("full");
+      }
+    }
 
     const displayMessage = currentAttachment ? `${userMessage}` : userMessage;
     setMessages((prev) => {
@@ -264,7 +374,15 @@ export default function ChatPage() {
     abortControllerRef.current = controller;
 
     try {
-      const res = await streamMessage(userMessage, activeSessionId || undefined, currentAttachment?.text, currentAttachment?.name, controller.signal);
+      const res = await streamMessage(
+        userMessage,
+        activeSessionId || undefined,
+        currentAttachment?.text,
+        currentAttachment?.name,
+        controller.signal,
+        activeSkill || undefined,
+        lazySeniorMode
+      );
       const reader = res.body?.getReader();
       const decoder = new TextDecoder();
       if (!reader) throw new Error("No reader");
@@ -426,7 +544,14 @@ export default function ChatPage() {
         });
       } else {
       try {
-        const data = await sendMessage(userMessage, activeSessionId || undefined, currentAttachment?.text, currentAttachment?.name);
+        const data = await sendMessage(
+          userMessage,
+          activeSessionId || undefined,
+          currentAttachment?.text,
+          currentAttachment?.name,
+          activeSkill || undefined,
+          lazySeniorMode
+        );
         setMessages((prev) => {
           const u = [...prev];
           if (u[u.length - 1]?.role === "assistant" && !u[u.length - 1]?.content && !u[u.length - 1]?.structured) u.pop();
@@ -456,7 +581,37 @@ export default function ChatPage() {
     }
   }, [input, isStreaming, activeSessionId, attachment]);
 
-  const handleKeyDown = (e: React.KeyboardEvent) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleSend(); } };
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (showSlashMenu) {
+      if (e.key === "ArrowDown") {
+        e.preventDefault();
+        setSlashMenuIndex(prev => (prev + 1) % filteredSlashCommands.length);
+        return;
+      }
+      if (e.key === "ArrowUp") {
+        e.preventDefault();
+        setSlashMenuIndex(prev => (prev - 1 + filteredSlashCommands.length) % filteredSlashCommands.length);
+        return;
+      }
+      if (e.key === "Enter" || e.key === "Tab") {
+        e.preventDefault();
+        if (filteredSlashCommands[slashMenuIndex]) {
+          selectSlashCommand(filteredSlashCommands[slashMenuIndex]);
+        }
+        return;
+      }
+      if (e.key === "Escape") {
+        e.preventDefault();
+        setShowSlashMenu(false);
+        return;
+      }
+    }
+
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      handleSend();
+    }
+  };
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -530,11 +685,11 @@ export default function ChatPage() {
           <div className="px-4 py-4 border-b border-[#3e3e38]">
             <div className="flex items-center gap-2 mb-1">
               <div className="w-7 h-7 rounded-lg bg-[#e8e4dd] flex items-center justify-center p-1 flex-shrink-0">
-                <img src="/ai-merge-logo.png" alt="AI Merge" className="w-full h-full object-contain" />
+                <span className="text-sm font-bold text-[#2a2a27]">K</span>
               </div>
               <div className="flex-1 min-w-0">
-                <div className="text-sm font-semibold text-[#e8e4dd] truncate">Private AI Vault</div>
-                <div className="text-[10px] text-[#7a776f] truncate">powered by AI Merge</div>
+                <div className="text-sm font-semibold text-[#e8e4dd] truncate">Kizuna AI Vault</div>
+                <div className="text-[10px] text-[#7a776f] truncate">powered by Kizuna</div>
               </div>
             </div>
           </div>
@@ -557,6 +712,15 @@ export default function ChatPage() {
 
       {/* Main Area */}
       <div className="flex-1 flex flex-col min-w-0">
+        {/* Top Header Bar */}
+        <div className="h-[52px] border-b border-[#3e3e38] bg-[#2a2a27]/85 backdrop-blur flex items-center justify-between px-6 z-10 flex-shrink-0">
+          <div className="flex items-center gap-2">
+            <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: theme.accent }} />
+            <span className="text-sm font-semibold text-[#e8e4dd] capitalize">{theme.label} AI</span>
+          </div>
+          
+
+        </div>
         {/* Messages or Empty State */}
         <div className="flex-1 overflow-y-auto">
           {messages.length === 0 ? (
@@ -568,7 +732,32 @@ export default function ChatPage() {
               </div>
 
               {/* Input box — centered like Claude.ai */}
-              <div className="w-full max-w-[560px]">
+              <div className="w-full max-w-[560px] relative">
+                {showSlashMenu && (
+                  <div className="absolute bottom-full left-0 right-0 mb-2 z-50 bg-[#3a3a36]/95 backdrop-blur border border-[#4a4a44] rounded-xl shadow-2xl overflow-hidden max-h-60 overflow-y-auto">
+                    {slashMenuLevel === "lazy-senior" && (
+                      <div className="px-4 py-2 bg-[#454540]/70 border-b border-[#4a4a44]/50 text-[10px] font-semibold text-[#a8a49d] uppercase tracking-wider flex items-center gap-1.5">
+                        <span>⚡ Lazy Senior Skills</span>
+                      </div>
+                    )}
+                      <div
+                        key={cmd.name}
+                        className={`px-4 py-2.5 cursor-pointer border-b border-[#454540]/50 last:border-b-0 flex flex-col transition-colors ${
+                          slashMenuIndex === idx
+                            ? "bg-[#454540] text-[#fbbf24]"
+                            : "text-[#a8a49d] hover:bg-[#40403b]/50 hover:text-[#fbbf24]"
+                        }`}
+                        onClick={() => selectSlashCommand(cmd)}
+                      >
+                        <span className={`text-xs font-mono font-semibold ${slashMenuIndex === idx ? "text-[#fbbf24]" : "text-[#e8e4dd]"}`}>
+                          {cmd.name}
+                        </span>
+                        <span className={`text-[10px] mt-0.5 ${slashMenuIndex === idx ? "text-[#e8e4dd]" : "text-[#7a776f]"}`}>
+                          {cmd.description}
+                        </span>
+                      </div>
+                  </div>
+                )}
                 <div className="bg-[#3a3a36] border border-[#4a4a44] rounded-2xl overflow-hidden">
                   {attachment && (
                     <div className="px-4 pt-3 flex items-center gap-2">
@@ -585,7 +774,7 @@ export default function ChatPage() {
                   <textarea
                     ref={inputRef}
                     value={input}
-                    onChange={(e) => setInput(e.target.value)}
+                    onChange={(e) => handleInputChange(e.target.value)}
                     onKeyDown={handleKeyDown}
                     placeholder={attachment ? "Ask about this document..." : "How can I help you today?"}
                     rows={1}
@@ -601,7 +790,7 @@ export default function ChatPage() {
                       <span className="text-xs text-[#7a776f]">{theme.label}</span>
                       <button
                         onClick={isStreaming ? handleStop : handleSend}
-                        disabled={!isStreaming && !input.trim()}
+                        disabled={!isStreaming && !(input || "").trim()}
                         className="p-1.5 rounded-lg transition-colors disabled:opacity-30 disabled:cursor-not-allowed hover:bg-[#454540]"
                         title={isStreaming ? "Stop generating" : "Send"}
                         aria-label={isStreaming ? "Stop generating" : "Send message"}
@@ -811,7 +1000,34 @@ export default function ChatPage() {
         {/* Bottom input bar (only when in conversation) */}
         {messages.length > 0 && (
           <div className="p-4 bg-[#2f2f2c]">
-            <div className="max-w-3xl mx-auto">
+            <div className="max-w-3xl mx-auto relative">
+              {showSlashMenu && (
+                <div className="absolute bottom-full left-0 right-0 mb-2 z-50 bg-[#3a3a36]/95 backdrop-blur border border-[#4a4a44] rounded-xl shadow-2xl overflow-hidden max-h-60 overflow-y-auto">
+                  {slashMenuLevel === "lazy-senior" && (
+                    <div className="px-4 py-2 bg-[#454540]/70 border-b border-[#4a4a44]/50 text-[10px] font-semibold text-[#a8a49d] uppercase tracking-wider flex items-center gap-1.5">
+                      <span>⚡ Lazy Senior Skills</span>
+                    </div>
+                  )}
+                  {filteredSlashCommands.map((cmd, idx) => (
+                    <div
+                      key={cmd.name}
+                      className={`px-4 py-2.5 cursor-pointer border-b border-[#454540]/50 last:border-b-0 flex flex-col transition-colors ${
+                        slashMenuIndex === idx
+                          ? "bg-[#454540] text-[#fbbf24]"
+                          : "text-[#a8a49d] hover:bg-[#40403b]/50 hover:text-[#fbbf24]"
+                      }`}
+                      onClick={() => selectSlashCommand(cmd)}
+                    >
+                      <span className={`text-xs font-mono font-semibold ${slashMenuIndex === idx ? "text-[#fbbf24]" : "text-[#e8e4dd]"}`}>
+                        {cmd.name}
+                      </span>
+                      <span className={`text-[10px] mt-0.5 ${slashMenuIndex === idx ? "text-[#e8e4dd]" : "text-[#7a776f]"}`}>
+                        {cmd.description}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              )}
               <div className="bg-[#3a3a36] border border-[#4a4a44] rounded-2xl overflow-hidden">
                 {attachment && (
                   <div className="px-4 pt-3 flex items-center gap-2">
@@ -828,7 +1044,7 @@ export default function ChatPage() {
                 <textarea
                   ref={inputRef}
                   value={input}
-                  onChange={(e) => setInput(e.target.value)}
+                  onChange={(e) => handleInputChange(e.target.value)}
                   onKeyDown={handleKeyDown}
                   placeholder={attachment ? "Ask about this document..." : "Message Kizuna..."}
                   rows={1}
@@ -842,7 +1058,7 @@ export default function ChatPage() {
                   </label>
                   <div className="flex items-center gap-2">
                     <span className="text-xs text-[#7a776f]">{theme.label}</span>
-                    <button onClick={isStreaming ? handleStop : handleSend} disabled={!isStreaming && !input.trim()} className="p-1.5 rounded-lg transition-colors disabled:opacity-30 disabled:cursor-not-allowed hover:bg-[#454540]" title={isStreaming ? "Stop generating" : "Send"} aria-label={isStreaming ? "Stop generating" : "Send message"}>
+                    <button onClick={isStreaming ? handleStop : handleSend} disabled={!isStreaming && !(input || "").trim()} className="p-1.5 rounded-lg transition-colors disabled:opacity-30 disabled:cursor-not-allowed hover:bg-[#454540]" title={isStreaming ? "Stop generating" : "Send"} aria-label={isStreaming ? "Stop generating" : "Send message"}>
                       {isStreaming ? (
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" className="text-[#e8e4dd]"><rect x="6" y="6" width="12" height="12" rx="1.5"/></svg>
                       ) : (

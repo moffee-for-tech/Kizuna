@@ -9,7 +9,7 @@ from sqlalchemy.orm import Session
 from services.auth_service import decode_access_token, get_user_by_id, is_token_blacklisted
 from db.database import get_db
 
-logger = logging.getLogger("triton.auth")
+logger = logging.getLogger("kizuna.auth")
 
 security = HTTPBearer(auto_error=False)
 

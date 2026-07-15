@@ -19,6 +19,7 @@ from agents.router import get_agent_for_department
 from agents.runner import run_agent, run_agent_streaming
 from agents.tools import ConfirmationRequired
 from services.summary_service import update_session_summary
+from services.skills_service import list_skills
 from services.session_store import (
     create_session,
     get_session,
@@ -142,10 +143,69 @@ async def chat(
         raise HTTPException(status_code=400, detail="Message cannot be empty")
 
     session_id = _prepare_session(db, user_id, department, body.session_id)
+    session = get_session(db, session_id)
+    if session:
+        if body.active_skill is not None:
+            session.active_skill = None if body.active_skill == "none" else body.active_skill
+        if body.lazy_senior_mode is not None:
+            session.lazy_senior_mode = body.lazy_senior_mode
+        db.commit()
+
+    temp_skill = session.active_skill if session else None
+    temp_mode = session.lazy_senior_mode if session else "full"
+    message_to_send = message
+
+    # Handle slash commands
+    if message.startswith("/"):
+        parts = message.split(" ", 1)
+        command = parts[0].lower()
+        cmd_args = parts[1].strip() if len(parts) > 1 else ""
+
+        if command == "/lazy-senior":
+            mode = cmd_args.lower() if cmd_args else "full"
+            if mode in ["lite", "full", "ultra", "off"]:
+                if session:
+                    if mode == "off":
+                        session.active_skill = None
+                    else:
+                        session.active_skill = "lazy-senior"
+                        session.lazy_senior_mode = mode
+                    db.commit()
+                
+                add_message(db, session_id, "user", message)
+                confirm_msg = f"✓ Lazy Senior mode set to **{mode}**." if mode != "off" else "✗ Lazy Senior mode deactivated."
+                structured = {
+                    "title": "System Command",
+                    "summary": "",
+                    "sections": [{"heading": "", "content": confirm_msg}],
+                    "key_takeaways": [],
+                    "tool_calls": [],
+                }
+                flat_markdown = _flatten_structured_response(structured)
+                add_message(db, session_id, "assistant", flat_markdown)
+                return {
+                    "session_id": session_id,
+                    "message": flat_markdown,
+                    "structured": structured,
+                    "department": department,
+                }
+        elif command in ["/lazy-senior-review", "/lazy-senior-audit", "/lazy-senior-debt", "/lazy-senior-gain", "/lazy-senior-help"]:
+            skill_name = command.replace("/", "")
+            temp_skill = skill_name
+            if skill_name == "lazy-senior-review":
+                message_to_send = f"Please perform an over-engineering code review of the workspace. First use workspace_git_diff to see local changes, then review the modifications. Arg: {cmd_args}"
+            elif skill_name == "lazy-senior-audit":
+                message_to_send = f"Please perform a whole-repo over-engineering audit. Use workspace_list_files and workspace_read_file to scan files, then report findings. Arg: {cmd_args}"
+            elif skill_name == "lazy-senior-debt":
+                message_to_send = f"Please scan the workspace using workspace_grep for 'lazy-senior:' comments to build a debt ledger. If matches are found, report them."
+            elif skill_name == "lazy-senior-gain":
+                message_to_send = f"Please display the Lazy Senior gain scoreboard."
+            elif skill_name == "lazy-senior-help":
+                message_to_send = f"Please display the Lazy Senior reference guide / help card."
 
     # Resolve document: save new attachment to session, or load existing one
     doc_context, doc_name = _resolve_document(db, session_id, body.document_context, body.document_name)
-    full_message = build_message_with_document(message, doc_context, doc_name)
+    full_message = build_message_with_document(message_to_send, doc_context, doc_name)
 
     # Store only the plain user message in DB (not the PDF blob)
     add_message(db, session_id, "user", message)
@@ -176,6 +236,8 @@ async def chat(
             session_id=session_id,
             conversation_history=history[:-1],
             session_summary=session_summary,
+            active_skill=temp_skill,
+            lazy_senior_mode=temp_mode,
         )
     except ConfirmationRequired as cr:
         action_id = str(uuid.uuid4())
@@ -244,10 +306,41 @@ async def chat_stream(
         raise HTTPException(status_code=400, detail="Message cannot be empty")
 
     session_id = _prepare_session(db, user_id, department, body.session_id)
+    session = get_session(db, session_id)
+    if session:
+        if body.active_skill is not None:
+            session.active_skill = None if body.active_skill == "none" else body.active_skill
+        if body.lazy_senior_mode is not None:
+            session.lazy_senior_mode = body.lazy_senior_mode
+        db.commit()
+
+    temp_skill = session.active_skill if session else None
+    temp_mode = session.lazy_senior_mode if session else "full"
+    message_to_send = message
+
+    # Handle one-shot slash commands to set temp_skill override
+    if message.startswith("/"):
+        parts = message.split(" ", 1)
+        command = parts[0].lower()
+        cmd_args = parts[1].strip() if len(parts) > 1 else ""
+
+        if command in ["/lazy-senior-review", "/lazy-senior-audit", "/lazy-senior-debt", "/lazy-senior-gain", "/lazy-senior-help"]:
+            skill_name = command.replace("/", "")
+            temp_skill = skill_name
+            if skill_name == "lazy-senior-review":
+                message_to_send = f"Please perform an over-engineering code review of the workspace. First use workspace_git_diff to see local changes, then review the modifications. Arg: {cmd_args}"
+            elif skill_name == "lazy-senior-audit":
+                message_to_send = f"Please perform a whole-repo over-engineering audit. Use workspace_list_files and workspace_read_file to scan files, then report findings. Arg: {cmd_args}"
+            elif skill_name == "lazy-senior-debt":
+                message_to_send = f"Please scan the workspace using workspace_grep for 'lazy-senior:' comments to build a debt ledger. If matches are found, report them."
+            elif skill_name == "lazy-senior-gain":
+                message_to_send = f"Please display the Lazy Senior gain scoreboard."
+            elif skill_name == "lazy-senior-help":
+                message_to_send = f"Please display the Lazy Senior reference guide / help card."
 
     # Resolve document: save new attachment to session, or load existing one
     doc_context, doc_name = _resolve_document(db, session_id, body.document_context, body.document_name)
-    full_message = build_message_with_document(message, doc_context, doc_name)
+    full_message = build_message_with_document(message_to_send, doc_context, doc_name)
 
     # Store only the plain user message in DB (not the PDF blob)
     add_message(db, session_id, "user", message)
@@ -266,12 +359,38 @@ async def chat_stream(
         structured = None
         try:
             logger.info(f"event_generator starting for session={session_id}")
+            
+            logger.info(f"Yielding session event for session={session_id}")
+            yield {"event": "session", "data": json.dumps({"session_id": session_id})}
+
+            # If slash command is /lazy-senior, confirm immediately and exit
+            if message.startswith("/"):
+                parts = message.split(" ", 1)
+                command = parts[0].lower()
+                cmd_args = parts[1].strip() if len(parts) > 1 else ""
+                
+                if command == "/lazy-senior":
+                    mode = cmd_args.lower() if cmd_args else "full"
+                    if mode in ["lite", "full", "ultra", "off"]:
+                        confirm_msg = f"✓ Lazy Senior mode set to **{mode}**." if mode != "off" else "✗ Lazy Senior mode deactivated."
+                        structured = {
+                            "title": "System Command",
+                            "summary": "",
+                            "sections": [{"heading": "", "content": confirm_msg}],
+                            "key_takeaways": [],
+                            "tool_calls": [],
+                        }
+                        # Save assistant response to DB
+                        flat_markdown = _flatten_structured_response(structured)
+                        add_message(db, session_id, "assistant", flat_markdown)
+                        
+                        yield {"event": "structured", "data": json.dumps(structured)}
+                        yield {"event": "done", "data": json.dumps({"session_id": session_id})}
+                        return
+
             agent_config = get_agent_for_department(department, user_id, email=email, name=name)
             session = get_session(db, session_id)
             session_summary = session.session_summary if session else None
-
-            logger.info(f"Yielding session event for session={session_id}")
-            yield {"event": "session", "data": json.dumps({"session_id": session_id})}
 
             logger.info(f"Starting run_agent_streaming for session={session_id}")
             async for evt in run_agent_streaming(
@@ -283,6 +402,8 @@ async def chat_stream(
                 session_id=session_id,
                 conversation_history=history[:-1],
                 session_summary=session_summary,
+                active_skill=temp_skill,
+                lazy_senior_mode=temp_mode,
             ):
                 logger.info(f"Received event type={evt.get('type')} for session={session_id}")
                 if evt["type"] == "tool_start":
@@ -518,3 +639,9 @@ async def confirm_action(
             status_code=502,
             detail=f"Tool execution failed: {type(e).__name__}: {e}",
         )
+
+
+@router.get("/skills")
+async def get_skills_endpoint(current_user: dict = Depends(get_current_user)):
+    """List all available custom skills."""
+    return {"skills": list_skills()}
