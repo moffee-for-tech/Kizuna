@@ -82,7 +82,7 @@ def test_audit_log_records_user_id_and_session_id_on_invocation(monkeypatch, cap
     with patch("composio.Composio", return_value=fake_composio):
         from agents.tools import get_composio_tools
 
-        with caplog.at_level(logging.INFO, logger="triton.audit.composio"):
+        with caplog.at_level(logging.INFO, logger="kizuna.audit.composio"):
             tools = get_composio_tools("user-A", "admin")
             assert len(tools) == 1
             # Invoke the wrapped tool the same way ADK would
@@ -90,7 +90,7 @@ def test_audit_log_records_user_id_and_session_id_on_invocation(monkeypatch, cap
 
     assert result["session"] == "sess-abc-123"
 
-    msgs = [r.getMessage() for r in caplog.records if r.name == "triton.audit.composio"]
+    msgs = [r.getMessage() for r in caplog.records if r.name == "kizuna.audit.composio"]
     assert any("session_create" in m and "user-A" in m and "sess-abc-123" in m for m in msgs), \
         f"Missing session_create audit log: {msgs}"
     assert any("tool_call" in m and "user-A" in m and "sess-abc-123" in m for m in msgs), \

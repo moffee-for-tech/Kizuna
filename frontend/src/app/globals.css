@@ -1,21 +1,199 @@
 @import "tailwindcss";
 
 :root {
-  --bg: #2f2f2c;
-  --bg-sidebar: #2a2a27;
-  --bg-surface: #3a3a36;
-  --bg-surface-hover: #454540;
-  --bg-input: #3a3a36;
-  --bg-modal: #353531;
-  --text: #e8e4dd;
-  --text-secondary: #a8a49d;
-  --text-muted: #7a776f;
-  --accent: #d4a574;
-  --accent-hover: #e0b88a;
-  --border: #4a4a44;
-  --border-light: #3e3e38;
+  --bg: #090604;
+  --bg-sidebar: #0d0806;
+  --bg-surface: #1b0d08;
+  --bg-surface-hover: #351609;
+  --bg-input: #160b07;
+  --bg-modal: #130a07;
+  --text: #fff3e8;
+  --text-secondary: #c9aea0;
+  --text-muted: #8d7468;
+  --accent: #ff6900;
+  --accent-hover: #ff8a2a;
+  --border: #4a2515;
+  --border-light: #30160d;
   --success: #4ade80;
   --error: #f87171;
+}
+
+html,
+body {
+  min-height: 100%;
+  background: var(--bg);
+  color: var(--text);
+}
+
+body {
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+/* Orange-on-black visual system inspired by the supplied reference. */
+.kizuna-app-shell {
+  position: relative;
+  isolation: isolate;
+  background:
+    radial-gradient(circle at 60% 0%, rgba(255, 83, 0, 0.16), transparent 29rem),
+    radial-gradient(circle at 100% 100%, rgba(173, 35, 0, 0.16), transparent 37rem),
+    #090604;
+}
+
+.kizuna-app-shell::before,
+.kizuna-app-shell::after {
+  content: "";
+  position: fixed;
+  pointer-events: none;
+  z-index: -1;
+  border-radius: 999px;
+  filter: blur(18px);
+}
+
+.kizuna-app-shell::before {
+  width: 30rem;
+  height: 30rem;
+  top: -17rem;
+  left: 28%;
+  background: rgba(255, 85, 0, 0.18);
+}
+
+.kizuna-app-shell::after {
+  width: 24rem;
+  height: 24rem;
+  right: -13rem;
+  bottom: -15rem;
+  background: rgba(255, 47, 0, 0.14);
+}
+
+.kizuna-app-shell [class~="bg-[#2a2a27]"],
+.kizuna-app-shell [class*="bg-[#2a2a27]/"] {
+  background-color: rgba(13, 8, 6, 0.88) !important;
+}
+
+.kizuna-app-shell [class~="bg-[#2f2f2c]"] {
+  background-color: rgba(9, 6, 4, 0.92) !important;
+}
+
+.kizuna-app-shell [class~="bg-[#3a3a36]"],
+.kizuna-app-shell [class*="bg-[#3a3a36]/"] {
+  background:
+    linear-gradient(135deg, rgba(55, 22, 10, 0.88), rgba(20, 10, 7, 0.94)) !important;
+}
+
+.kizuna-app-shell [class~="bg-[#353531]"] {
+  background-color: rgba(18, 10, 7, 0.94) !important;
+}
+
+.kizuna-app-shell [class~="bg-[#454540]"],
+.kizuna-app-shell [class*="bg-[#454540]/"] {
+  background-color: rgba(72, 28, 10, 0.7) !important;
+}
+
+.kizuna-app-shell [class*="border-[#3e3e38]"],
+.kizuna-app-shell [class*="border-[#4a4a44]"] {
+  border-color: rgba(116, 49, 20, 0.6) !important;
+}
+
+.kizuna-app-shell [class*="text-[#e8e4dd]"] { color: #fff3e8 !important; }
+.kizuna-app-shell [class*="text-[#d8d4cd]"] { color: #f3d9c7 !important; }
+.kizuna-app-shell [class*="text-[#a8a49d]"] { color: #c9aea0 !important; }
+.kizuna-app-shell [class*="text-[#7a776f]"] { color: #8d7468 !important; }
+
+.kizuna-app-shell [class*="hover:bg-[#3a3a36]"]:hover,
+.kizuna-app-shell [class*="hover:bg-[#353531]"]:hover,
+.kizuna-app-shell [class*="hover:bg-[#454540]"]:hover {
+  background-color: rgba(107, 41, 10, 0.65) !important;
+}
+
+.kizuna-brand-mark {
+  background: conic-gradient(from 210deg, #ffb23f, #ff5600, #651000, #ff8b1f, #ffb23f);
+  box-shadow: 0 0 22px rgba(255, 91, 0, 0.42), inset 0 0 12px rgba(255, 240, 204, 0.35);
+}
+
+.kizuna-welcome-orb {
+  position: relative;
+  width: clamp(6.5rem, 12vw, 9.5rem);
+  aspect-ratio: 1;
+  border-radius: 999px;
+  background:
+    radial-gradient(circle at 30% 25%, #fff7bd 0 6%, #ffbd43 19%, #ff6a00 46%, #8a1800 71%, #130604 100%);
+  box-shadow: 0 0 28px rgba(255, 74, 0, 0.85), 0 0 90px rgba(255, 55, 0, 0.45), inset -20px -26px 30px rgba(42, 4, 1, 0.68);
+  animation: orb-drift 6s ease-in-out infinite;
+}
+
+.kizuna-welcome-orb::after {
+  content: "";
+  position: absolute;
+  inset: 11%;
+  border-radius: inherit;
+  border: 1px solid rgba(255, 239, 192, 0.24);
+  filter: blur(1px);
+}
+
+.kizuna-prompt-card {
+  border: 1px solid rgba(137, 54, 18, 0.55);
+  background: linear-gradient(145deg, rgba(76, 26, 9, 0.78), rgba(21, 9, 6, 0.92));
+  box-shadow: inset 0 1px rgba(255, 168, 83, 0.08), 0 10px 24px rgba(0, 0, 0, 0.16);
+}
+
+.kizuna-prompt-card:hover {
+  transform: translateY(-2px);
+  border-color: rgba(255, 112, 29, 0.78);
+  box-shadow: 0 0 24px rgba(255, 75, 0, 0.16), inset 0 1px rgba(255, 193, 119, 0.15);
+}
+
+.kizuna-composer {
+  border-color: rgba(176, 63, 17, 0.72) !important;
+  background: linear-gradient(135deg, rgba(76, 25, 8, 0.82), rgba(19, 8, 5, 0.96)) !important;
+  box-shadow: 0 0 0 1px rgba(255, 122, 35, 0.07), 0 16px 42px rgba(0, 0, 0, 0.34);
+}
+
+.kizuna-send-button {
+  background: linear-gradient(145deg, #ff9d25, #f04f00) !important;
+  color: #160602 !important;
+  box-shadow: 0 4px 18px rgba(255, 84, 0, 0.42);
+}
+
+.kizuna-send-button:hover { filter: brightness(1.12); }
+
+.kizuna-auth {
+  background:
+    radial-gradient(circle at 50% -8%, rgba(255, 103, 0, 0.34), transparent 24rem),
+    radial-gradient(circle at 5% 100%, rgba(153, 30, 0, 0.22), transparent 28rem),
+    #090604;
+}
+
+.kizuna-auth-card {
+  background: linear-gradient(145deg, rgba(54, 21, 9, 0.82), rgba(17, 8, 6, 0.95)) !important;
+  border-color: rgba(152, 57, 16, 0.64) !important;
+  box-shadow: 0 24px 70px rgba(0, 0, 0, 0.38), inset 0 1px rgba(255, 186, 111, 0.1);
+}
+
+.kizuna-auth-card input,
+.kizuna-auth-card select {
+  background: rgba(11, 6, 4, 0.78) !important;
+  border-color: rgba(111, 43, 16, 0.78) !important;
+}
+
+.kizuna-auth-card input:focus,
+.kizuna-auth-card select:focus {
+  border-color: #ff791a !important;
+  box-shadow: 0 0 0 3px rgba(255, 92, 0, 0.12);
+}
+
+.kizuna-auth-card button[type="submit"] {
+  background: linear-gradient(145deg, #ff9d25, #ef4f00) !important;
+  color: #180703 !important;
+  box-shadow: 0 6px 22px rgba(255, 84, 0, 0.36);
+}
+
+@keyframes orb-drift {
+  0%, 100% { transform: translateY(0) scale(1); }
+  50% { transform: translateY(-8px) scale(1.025); }
+}
+
+@media (max-width: 640px) {
+  .kizuna-app-shell > :first-child { width: 46px; }
 }
 
 /* Custom scrollbar */

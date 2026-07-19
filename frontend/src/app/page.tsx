@@ -67,16 +67,17 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4">
+    <div className="kizuna-auth min-h-screen flex items-center justify-center p-4">
       <div className="w-full max-w-sm">
         <div className="text-center mb-10">
+          <div className="kizuna-brand-mark mx-auto mb-4 flex h-11 w-11 items-center justify-center rounded-2xl text-base font-bold text-[#1a0802]">K</div>
           <h1 className="text-3xl font-semibold text-[#e8e4dd] tracking-tight">
             Kizuna
           </h1>
-          <p className="text-[#a8a49d] text-sm mt-2">AI-Powered Chat Platform</p>
+          <p className="text-[#a8a49d] text-sm mt-2">Your private intelligence workspace</p>
         </div>
 
-        <div className="bg-[#3a3a36] border border-[#4a4a44] rounded-xl p-8">
+        <div className="kizuna-auth-card bg-[#3a3a36] border border-[#4a4a44] rounded-2xl p-8">
           {!challengeToken ? (
             <>
               <h2 className="text-lg font-medium mb-6 text-[#e8e4dd]">Sign in</h2>

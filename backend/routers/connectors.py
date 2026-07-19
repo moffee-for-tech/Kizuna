@@ -36,6 +36,8 @@ TOOLKIT_NAMES = {
     "microsoft_teams": "Microsoft Teams",
     "excel": "Excel",
     "onenote": "OneNote",
+    "instagram": "Instagram",
+    "linkedin": "LinkedIn",
 }
 
 TOOLKIT_DESCRIPTIONS = {
@@ -57,6 +59,8 @@ TOOLKIT_DESCRIPTIONS = {
     "microsoft_teams": "Send chat messages and manage channels in Microsoft Teams",
     "excel": "Read and update spreadsheets in Excel",
     "onenote": "Read and write digital notes in OneNote",
+    "instagram": "Publish posts, manage media, and view insights on Instagram",
+    "linkedin": "Post updates, share content, and manage profile data on LinkedIn",
 }
 
 

@@ -1,6 +1,8 @@
 import os
 import re
 import subprocess
+import requests
+import json
 from pathlib import Path
 from typing import Dict, Any, List
 
@@ -121,6 +123,51 @@ def workspace_get_skills_registry() -> str:
     except Exception as e:
         return f"Error loading skills registry: {str(e)}"
 
+def web_search(query: str) -> str:
+    """Searches the live web for the latest information using TinyFish Search API."""
+    api_key = os.environ.get("TINYFISH_API_KEY", "")
+    if not api_key:
+        try:
+            from config import settings
+            api_key = getattr(settings, "TINYFISH_API_KEY", "")
+        except Exception:
+            pass
+        
+    if not api_key:
+        return "Error: TINYFISH_API_KEY is not set."
+        
+    try:
+        response = requests.get(
+            "https://api.search.tinyfish.ai",
+            params={"query": query},
+            headers={"X-API-Key": api_key},
+            timeout=10
+        )
+        if response.status_code != 200:
+            return f"Error: TinyFish API returned status code {response.status_code}: {response.text}"
+            
+        data = response.json()
+        if isinstance(data, dict):
+            results = data.get("results", data)
+        else:
+            results = data
+            
+        if not results:
+            return "No search results found."
+            
+        if isinstance(results, list):
+            formatted = []
+            for item in results[:8]:  # Limit to top 8 results to avoid token bloat
+                title = item.get("title", "No Title")
+                url = item.get("url", "No URL")
+                snippet = item.get("snippet", item.get("content", ""))
+                formatted.append(f"Title: {title}\nURL: {url}\nSnippet: {snippet}\n---")
+            return "\n".join(formatted)
+            
+        return json.dumps(results, indent=2)
+    except Exception as e:
+        return f"Error during web search: {str(e)}"
+
 # OpenAI Schema Definitions
 WORKSPACE_TOOLS_SCHEMAS = [
     {
@@ -189,6 +236,23 @@ WORKSPACE_TOOLS_SCHEMAS = [
                 "properties": {}
             }
         }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "web_search",
+            "description": "Searches the live web for the latest information using the TinyFish search engine.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "query": {
+                        "type": "string",
+                        "description": "The search query (e.g. 'latest AI news July 2026')."
+                    }
+                },
+                "required": ["query"]
+            }
+        }
     }
 ]
 
@@ -204,5 +268,7 @@ def execute_workspace_tool(name: str, arguments: Dict[str, Any]) -> str:
         return workspace_grep(arguments.get("pattern", ""))
     elif name == "workspace_get_skills_registry":
         return workspace_get_skills_registry()
+    elif name == "web_search":
+        return web_search(arguments.get("query", ""))
     else:
         raise ValueError(f"Unknown workspace tool: {name}")

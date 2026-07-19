@@ -68,26 +68,31 @@ DEPARTMENT_TOOLKITS: dict[str, list[str]] = {
         "zoom", "gmail", "google_chat", "googlecalendar", "googlemeet",
         "googledrive", "googlesheets", "googledocs", "googleslides", "outlook",
         "highlevel", "one_drive", "share_point", "microsoft_teams", "excel", "onenote",
+        "instagram", "linkedin",
     ],
     "sales": [
         "hubspot", "zoom", "gmail", "google_chat", "googlecalendar", "googlemeet",
         "googledrive", "googlesheets", "googledocs", "googleslides", "outlook",
         "highlevel", "one_drive", "share_point", "microsoft_teams", "excel", "onenote",
+        "instagram", "linkedin",
     ],
     "operations": [
         "jira", "zoom", "gmail", "google_chat", "googlecalendar", "googlemeet",
         "googledrive", "googlesheets", "googledocs", "googleslides", "outlook",
         "highlevel", "one_drive", "share_point", "microsoft_teams", "excel", "onenote",
+        "instagram", "linkedin",
     ],
     "finance": [
         "zoom", "gmail", "google_chat", "googlecalendar", "googlemeet",
         "googledrive", "googlesheets", "googledocs", "googleslides", "outlook",
         "highlevel", "one_drive", "share_point", "microsoft_teams", "excel", "onenote",
+        "instagram", "linkedin",
     ],
     "executive": [
         "hubspot", "jira", "zoom", "gmail", "google_chat", "googlecalendar", "googlemeet",
         "googledrive", "googlesheets", "googledocs", "googleslides", "outlook",
         "highlevel", "one_drive", "share_point", "microsoft_teams", "excel", "onenote",
+        "instagram", "linkedin",
     ],
 }
 

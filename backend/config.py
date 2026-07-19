@@ -15,6 +15,9 @@ class Settings(BaseSettings):
     # Composio
     COMPOSIO_API_KEY: str = ""
 
+    # TinyFish MCP
+    TINYFISH_API_KEY: str = ""
+
     # Auth
     JWT_SECRET: str = ""
     JWT_ALGORITHM: str = "HS256"

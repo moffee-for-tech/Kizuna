@@ -637,9 +637,12 @@ export default function ChatPage() {
   if (loading || !user) return <div className="flex items-center justify-center min-h-screen"><div className="text-[#a8a49d]">Loading...</div></div>;
 
   return (
-    <div className="flex h-screen overflow-hidden">
+    <div className="kizuna-app-shell flex h-screen overflow-hidden">
       {/* Icon Sidebar */}
       <div className="w-[52px] flex-shrink-0 bg-[#2a2a27] border-r border-[#3e3e38] flex flex-col items-center py-3 gap-1">
+        <div className="kizuna-brand-mark mb-2 flex h-9 w-9 items-center justify-center rounded-xl border border-[#ffbf73]/40 text-sm font-bold text-[#1a0802]" aria-label="Kizuna">
+          K
+        </div>
         {/* Toggle sessions panel */}
         <button onClick={() => setShowSessionsPanel(!showSessionsPanel)} className="w-9 h-9 rounded-lg flex items-center justify-center text-[#a8a49d] hover:text-[#e8e4dd] hover:bg-[#3a3a36] transition-colors" title="Toggle sidebar" aria-label="Toggle sidebar" aria-pressed={showSessionsPanel}>
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="9" y1="3" x2="9" y2="21"/></svg>
@@ -684,8 +687,8 @@ export default function ChatPage() {
           {/* Branding header */}
           <div className="px-4 py-4 border-b border-[#3e3e38]">
             <div className="flex items-center gap-2 mb-1">
-              <div className="w-7 h-7 rounded-lg bg-[#e8e4dd] flex items-center justify-center p-1 flex-shrink-0">
-                <span className="text-sm font-bold text-[#2a2a27]">K</span>
+              <div className="kizuna-brand-mark w-7 h-7 rounded-lg flex items-center justify-center p-1 flex-shrink-0">
+                <span className="text-sm font-bold text-[#1a0802]">K</span>
               </div>
               <div className="flex-1 min-w-0">
                 <div className="text-sm font-semibold text-[#e8e4dd] truncate">Kizuna AI Vault</div>
@@ -713,26 +716,57 @@ export default function ChatPage() {
       {/* Main Area */}
       <div className="flex-1 flex flex-col min-w-0">
         {/* Top Header Bar */}
-        <div className="h-[52px] border-b border-[#3e3e38] bg-[#2a2a27]/85 backdrop-blur flex items-center justify-between px-6 z-10 flex-shrink-0">
+        <div className="h-[58px] border-b border-[#3e3e38] bg-[#2a2a27]/85 backdrop-blur flex items-center justify-between px-4 sm:px-6 z-10 flex-shrink-0">
           <div className="flex items-center gap-2">
-            <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: theme.accent }} />
-            <span className="text-sm font-semibold text-[#e8e4dd] capitalize">{theme.label} AI</span>
+            <span className="w-2 h-2 rounded-full bg-[#ff7a19] shadow-[0_0_10px_#ff5b00]" />
+            <div>
+              <span className="block text-sm font-semibold text-[#e8e4dd]">Kizuna</span>
+              <span className="hidden sm:block text-[10px] uppercase tracking-[0.18em] text-[#7a776f]">{theme.label} intelligence</span>
+            </div>
           </div>
-          
-
+          <div className="flex items-center gap-2 rounded-full border border-[#5a2a14] bg-[#160b07]/80 px-3 py-1.5 text-[10px] font-medium uppercase tracking-[0.12em] text-[#c9aea0]">
+            <span className="h-1.5 w-1.5 rounded-full bg-[#ff7a19] shadow-[0_0_8px_#ff5b00]" />
+            Private workspace
+          </div>
         </div>
         {/* Messages or Empty State */}
         <div className="flex-1 overflow-y-auto">
           {messages.length === 0 ? (
             /* Empty state — Claude.ai style centered */
-            <div className="flex flex-col items-center justify-center h-full px-4">
-              <div className="flex items-center gap-3 mb-8">
-                <span className="text-3xl" style={{ color: theme.accent }}>*</span>
-                <h1 className="text-2xl font-medium text-[#e8e4dd]">What shall we think through?</h1>
+            <div className="relative flex h-full flex-col items-center justify-center overflow-hidden px-4 py-8">
+              <div className="pointer-events-none absolute left-1/2 top-1/2 h-[28rem] w-[28rem] -translate-x-1/2 -translate-y-1/2 rounded-full bg-[#ff4d00]/10 blur-[100px]" />
+              <div className="relative flex w-full max-w-[640px] flex-col items-center text-center">
+                <div className="kizuna-welcome-orb mb-6" aria-hidden="true" />
+                <p className="mb-3 text-[10px] font-semibold uppercase tracking-[0.26em] text-[#ff9b4a]">Kizuna is ready</p>
+                <h1 className="max-w-lg text-3xl font-medium leading-[1.04] tracking-[-0.045em] text-[#e8e4dd] sm:text-5xl">
+                  What are we building today?
+                </h1>
+                <p className="mt-4 max-w-md text-sm leading-relaxed text-[#a8a49d]">
+                  Start with a brief, a question, or a task. Kizuna will help turn it into clear next steps.
+                </p>
+
+                <div className="mt-7 grid w-full grid-cols-1 gap-2 sm:grid-cols-3">
+                  {[
+                    { title: "Plan a launch", prompt: "Help me build a launch plan for a new product." },
+                    { title: "Analyse a brief", prompt: "Analyse this brief and identify the most important next steps." },
+                    { title: "Improve a workflow", prompt: "Help me improve a recurring workflow for my team." },
+                  ].map((suggestion) => (
+                    <button
+                      key={suggestion.title}
+                      type="button"
+                      onClick={() => { setInput(suggestion.prompt); inputRef.current?.focus(); }}
+                      className="kizuna-prompt-card group rounded-2xl p-4 text-left transition-all duration-200"
+                    >
+                      <span className="mb-5 flex h-5 w-5 items-center justify-center rounded-full bg-[#ff6d00]/15 text-sm text-[#ff8e35] transition-transform group-hover:scale-110">✦</span>
+                      <span className="block text-sm font-medium text-[#e8e4dd]">{suggestion.title}</span>
+                      <span className="mt-1 block text-xs leading-relaxed text-[#a8a49d]">Ask Kizuna to get started</span>
+                    </button>
+                  ))}
+                </div>
               </div>
 
               {/* Input box — centered like Claude.ai */}
-              <div className="w-full max-w-[560px] relative">
+              <div className="relative z-10 mt-5 w-full max-w-[640px]">
                 {showSlashMenu && (
                   <div className="absolute bottom-full left-0 right-0 mb-2 z-50 bg-[#3a3a36]/95 backdrop-blur border border-[#4a4a44] rounded-xl shadow-2xl overflow-hidden max-h-60 overflow-y-auto">
                     {slashMenuLevel === "lazy-senior" && (
@@ -740,25 +774,27 @@ export default function ChatPage() {
                         <span>⚡ Lazy Senior Skills</span>
                       </div>
                     )}
-                      <div
-                        key={cmd.name}
-                        className={`px-4 py-2.5 cursor-pointer border-b border-[#454540]/50 last:border-b-0 flex flex-col transition-colors ${
-                          slashMenuIndex === idx
-                            ? "bg-[#454540] text-[#fbbf24]"
-                            : "text-[#a8a49d] hover:bg-[#40403b]/50 hover:text-[#fbbf24]"
-                        }`}
-                        onClick={() => selectSlashCommand(cmd)}
-                      >
-                        <span className={`text-xs font-mono font-semibold ${slashMenuIndex === idx ? "text-[#fbbf24]" : "text-[#e8e4dd]"}`}>
-                          {cmd.name}
-                        </span>
-                        <span className={`text-[10px] mt-0.5 ${slashMenuIndex === idx ? "text-[#e8e4dd]" : "text-[#7a776f]"}`}>
-                          {cmd.description}
-                        </span>
-                      </div>
+                      {filteredSlashCommands.map((cmd, idx) => (
+                        <div
+                          key={cmd.name}
+                          className={`px-4 py-2.5 cursor-pointer border-b border-[#454540]/50 last:border-b-0 flex flex-col transition-colors ${
+                            slashMenuIndex === idx
+                              ? "bg-[#454540] text-[#fbbf24]"
+                              : "text-[#a8a49d] hover:bg-[#40403b]/50 hover:text-[#fbbf24]"
+                          }`}
+                          onClick={() => selectSlashCommand(cmd)}
+                        >
+                          <span className={`text-xs font-mono font-semibold ${slashMenuIndex === idx ? "text-[#fbbf24]" : "text-[#e8e4dd]"}`}>
+                            {cmd.name}
+                          </span>
+                          <span className={`text-[10px] mt-0.5 ${slashMenuIndex === idx ? "text-[#e8e4dd]" : "text-[#7a776f]"}`}>
+                            {cmd.description}
+                          </span>
+                        </div>
+                      ))}
                   </div>
                 )}
-                <div className="bg-[#3a3a36] border border-[#4a4a44] rounded-2xl overflow-hidden">
+                <div className="kizuna-composer bg-[#3a3a36] border border-[#4a4a44] rounded-2xl overflow-hidden">
                   {attachment && (
                     <div className="px-4 pt-3 flex items-center gap-2">
                       <div className="flex items-center gap-2 px-3 py-1.5 bg-[#454540] rounded-lg text-xs text-[#e8e4dd]">
@@ -791,7 +827,7 @@ export default function ChatPage() {
                       <button
                         onClick={isStreaming ? handleStop : handleSend}
                         disabled={!isStreaming && !(input || "").trim()}
-                        className="p-1.5 rounded-lg transition-colors disabled:opacity-30 disabled:cursor-not-allowed hover:bg-[#454540]"
+                        className="kizuna-send-button p-2 rounded-full transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
                         title={isStreaming ? "Stop generating" : "Send"}
                         aria-label={isStreaming ? "Stop generating" : "Send message"}
                       >
@@ -1028,7 +1064,7 @@ export default function ChatPage() {
                   ))}
                 </div>
               )}
-              <div className="bg-[#3a3a36] border border-[#4a4a44] rounded-2xl overflow-hidden">
+              <div className="kizuna-composer bg-[#3a3a36] border border-[#4a4a44] rounded-2xl overflow-hidden">
                 {attachment && (
                   <div className="px-4 pt-3 flex items-center gap-2">
                     <div className="flex items-center gap-2 px-3 py-1.5 bg-[#454540] rounded-lg text-xs text-[#e8e4dd]">
@@ -1058,7 +1094,7 @@ export default function ChatPage() {
                   </label>
                   <div className="flex items-center gap-2">
                     <span className="text-xs text-[#7a776f]">{theme.label}</span>
-                    <button onClick={isStreaming ? handleStop : handleSend} disabled={!isStreaming && !(input || "").trim()} className="p-1.5 rounded-lg transition-colors disabled:opacity-30 disabled:cursor-not-allowed hover:bg-[#454540]" title={isStreaming ? "Stop generating" : "Send"} aria-label={isStreaming ? "Stop generating" : "Send message"}>
+                    <button onClick={isStreaming ? handleStop : handleSend} disabled={!isStreaming && !(input || "").trim()} className="kizuna-send-button p-2 rounded-full transition-colors disabled:opacity-30 disabled:cursor-not-allowed" title={isStreaming ? "Stop generating" : "Send"} aria-label={isStreaming ? "Stop generating" : "Send message"}>
                       {isStreaming ? (
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" className="text-[#e8e4dd]"><rect x="6" y="6" width="12" height="12" rx="1.5"/></svg>
                       ) : (
