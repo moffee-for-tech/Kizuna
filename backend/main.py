@@ -93,10 +93,10 @@ async def add_security_headers(request: Request, call_next):
     csp_origins = " ".join(origins) if origins else "'self'"
     response.headers["Content-Security-Policy"] = (
         "default-src 'self'; "
-        "script-src 'self'; "
-        "style-src 'self' 'unsafe-inline'; "
+        "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.jsdelivr.net; "
+        "style-src 'self' 'unsafe-inline' https://*.gstatic.com https://*.googleapis.com; "
         "img-src 'self' data: blob:; "
-        f"connect-src 'self' {csp_origins}; "
+        f"connect-src 'self' https://cdn.jsdelivr.net * {csp_origins}; "
         "frame-ancestors 'none'; "
         "base-uri 'self'; "
         "form-action 'self'"

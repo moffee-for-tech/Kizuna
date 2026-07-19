@@ -123,6 +123,12 @@ def _resolve_document(db, session_id, request_doc_context, request_doc_name):
     return get_session_document(db, session_id)
 
 
+@router.get("/search")
+def search_web_results(query: str, current_user: dict = Depends(get_current_user)):
+    """Search the web using TinyFish search and return results."""
+    from agents.workspace_tools import web_search
+    return {"results": web_search(query)}
+
 
 @router.post("")
 @limiter.limit("30/minute")
@@ -189,6 +195,29 @@ async def chat(
                     "structured": structured,
                     "department": department,
                 }
+        elif command == "/web-search":
+            query = cmd_args
+            if not query:
+                result_msg = "Please provide a query: `/web-search [your search query]`"
+            else:
+                from agents.workspace_tools import web_search as run_web_search
+                result_msg = run_web_search(query)
+            
+            structured = {
+                "title": f"Web Search: {query}" if query else "Web Search",
+                "summary": f"Direct TinyFish search results for: '{query}'" if query else "",
+                "sections": [{"heading": "Results", "content": result_msg}],
+                "key_takeaways": [],
+                "tool_calls": [],
+            }
+            flat_markdown = _flatten_structured_response(structured)
+            add_message(db, session_id, "assistant", flat_markdown)
+            return {
+                "session_id": session_id,
+                "message": flat_markdown,
+                "structured": structured,
+                "department": department,
+            }
         elif command in ["/lazy-senior-review", "/lazy-senior-audit", "/lazy-senior-debt", "/lazy-senior-gain", "/lazy-senior-help"]:
             skill_name = command.replace("/", "")
             temp_skill = skill_name
@@ -387,6 +416,28 @@ async def chat_stream(
                         yield {"event": "structured", "data": json.dumps(structured)}
                         yield {"event": "done", "data": json.dumps({"session_id": session_id})}
                         return
+                elif command == "/web-search":
+                    query = cmd_args
+                    if not query:
+                        result_msg = "Please provide a query: `/web-search [your search query]`"
+                    else:
+                        from agents.workspace_tools import web_search as run_web_search
+                        result_msg = run_web_search(query)
+                    
+                    structured = {
+                        "title": f"Web Search: {query}" if query else "Web Search",
+                        "summary": f"Direct TinyFish search results for: '{query}'" if query else "",
+                        "sections": [{"heading": "Results", "content": result_msg}],
+                        "key_takeaways": [],
+                        "tool_calls": [],
+                    }
+                    flat_markdown = _flatten_structured_response(structured)
+                    add_message(db, session_id, "assistant", flat_markdown)
+                    
+                    yield {"event": "structured", "data": json.dumps(structured)}
+                    yield {"event": "done", "data": json.dumps({"session_id": session_id})}
+                    return
+            
 
             agent_config = get_agent_for_department(department, user_id, email=email, name=name)
             session = get_session(db, session_id)

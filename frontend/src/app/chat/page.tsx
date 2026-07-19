@@ -65,6 +65,8 @@ export default function ChatPage() {
   const [activeSkill, setActiveSkill] = useState<string | null>(null);
   const [lazySeniorMode, setLazySeniorMode] = useState<string>("full");
   const [uploadError, setUploadError] = useState<string | null>(null);
+  const [isBulkMode, setIsBulkMode] = useState(false);
+  const [selectedSessionIds, setSelectedSessionIds] = useState<Set<string>>(new Set());
   
   interface SlashCommand {
     name: string;
@@ -73,6 +75,7 @@ export default function ChatPage() {
   }
 
   const ROOT_COMMANDS: SlashCommand[] = [
+    { name: "/web-search ...", description: "Search the live web using TinyFish", value: "/web-search " },
     { name: "/lazy-senior ...", description: "Configure or execute Lazy Senior developer commands", value: "lazy-senior" }
   ];
 
@@ -334,7 +337,93 @@ export default function ChatPage() {
   };
 
   const handleDeleteSession = async (sessionId: string) => {
-    try { await deleteSession(sessionId); if (activeSessionId === sessionId) handleNewChat(); loadSessions(); } catch (err) { console.error("Failed to delete session:", err); }
+    const previousSessions = [...sessions];
+    
+    // Optimistic UI update: remove item and clear chat immediately without lag
+    setSessions((prev) => prev.filter((s) => s.id !== sessionId));
+    if (activeSessionId === sessionId) {
+      setActiveSessionId(null);
+      setMessages([]);
+      setActiveSkill(null);
+      setLazySeniorMode("full");
+    }
+
+    try {
+      await deleteSession(sessionId);
+    } catch (err) {
+      console.error("Failed to delete session:", err);
+      // Rollback on failure
+      setSessions(previousSessions);
+      loadSessions();
+    }
+  };
+
+  const handleBulkDelete = async () => {
+    if (selectedSessionIds.size === 0) return;
+    const idsToDelete = Array.from(selectedSessionIds);
+    const previousSessions = [...sessions];
+
+    // Optimistic UI update: remove selected items and clear chat immediately
+    setSessions((prev) => prev.filter((s) => !selectedSessionIds.has(s.id)));
+    if (activeSessionId && selectedSessionIds.has(activeSessionId)) {
+      setActiveSessionId(null);
+      setMessages([]);
+      setActiveSkill(null);
+      setLazySeniorMode("full");
+    }
+
+    setSelectedSessionIds(new Set());
+    setIsBulkMode(false);
+
+    try {
+      await Promise.all(idsToDelete.map(id => deleteSession(id)));
+    } catch (err) {
+      console.error("Failed to delete sessions in bulk:", err);
+      // Rollback on failure
+      setSessions(previousSessions);
+      loadSessions();
+    }
+  };
+
+  const triggerAutomaticRedirects = (sr: StructuredResponse, userQuery: string) => {
+    const sectionsText = sr.sections.map(s => s.content).join("\n");
+    const allText = `${sr.summary}\n${sectionsText}`;
+    
+    const urlRegex = /(https?:\/\/[^\s\)\"\'>]+)/g;
+    const matches = allText.match(urlRegex);
+    
+    if (matches && matches.length > 0) {
+      const targetUrl = matches.find(url => 
+        !url.includes(window.location.host) && 
+        !url.includes("composio.dev") &&
+        !url.includes("connect.composio")
+      );
+      if (targetUrl) {
+        window.open(targetUrl, "_blank");
+        return;
+      }
+    }
+
+    if (userQuery.trim().startsWith("/web-search")) {
+      const query = userQuery.replace("/web-search", "").trim().toLowerCase();
+      if (query) {
+        if (query.includes(".") && !query.includes(" ")) {
+          const url = query.startsWith("http") ? query : `https://${query}`;
+          window.open(url, "_blank");
+          return;
+        }
+        const brands: Record<string, string> = {
+          "youtube": "https://www.youtube.com",
+          "google": "https://www.google.com",
+          "github": "https://www.github.com",
+          "wikipedia": "https://www.wikipedia.org"
+        };
+        if (brands[query]) {
+          window.open(brands[query], "_blank");
+          return;
+        }
+      }
+    }
   };
 
   const handleSend = useCallback(async () => {
@@ -523,6 +612,7 @@ export default function ChatPage() {
             return u;
           });
         }
+        triggerAutomaticRedirects(sr, userMessage);
       }
 
       if (newSessionId) setActiveSessionId(newSessionId);
@@ -558,6 +648,9 @@ export default function ChatPage() {
           u.push({ id: nextMsgId(), role: "assistant", content: "", structured: data.structured });
           return u;
         });
+        if (data.structured) {
+          triggerAutomaticRedirects(data.structured, userMessage);
+        }
         if (data.session_id) setActiveSessionId(data.session_id);
         loadSessions();
       } catch (e: any) {
@@ -696,19 +789,97 @@ export default function ChatPage() {
               </div>
             </div>
           </div>
-          <div className="p-3 border-b border-[#3e3e38]">
+          <div className="p-3 border-b border-[#3e3e38] flex items-center justify-between">
             <h3 className="text-xs font-medium text-[#a8a49d] uppercase tracking-wider">Conversations</h3>
+            {sessions.length > 0 && (
+              <button
+                onClick={() => {
+                  setIsBulkMode(!isBulkMode);
+                  setSelectedSessionIds(new Set());
+                }}
+                className="text-[10px] text-[#d4a574] hover:text-[#e0b88a] font-medium px-2 py-0.5 rounded border border-[#d4a57450] hover:bg-[#3a3a36] transition-all"
+              >
+                {isBulkMode ? "Cancel" : "Select"}
+              </button>
+            )}
           </div>
+          {isBulkMode && sessions.length > 0 && (
+            <div className="px-3 py-2 border-b border-[#3e3e38] bg-[#31312e] flex items-center justify-between text-[11px]">
+              <button
+                onClick={() => {
+                  if (selectedSessionIds.size === sessions.length) {
+                    setSelectedSessionIds(new Set());
+                  } else {
+                    setSelectedSessionIds(new Set(sessions.map(s => s.id)));
+                  }
+                }}
+                className="text-[#a8a49d] hover:text-[#e8e4dd] transition-colors"
+              >
+                {selectedSessionIds.size === sessions.length ? "Deselect All" : "Select All"}
+              </button>
+              <button
+                onClick={handleBulkDelete}
+                disabled={selectedSessionIds.size === 0}
+                className="text-[#f87171] hover:text-[#f87171dd] transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Delete ({selectedSessionIds.size})
+              </button>
+            </div>
+          )}
           <div className="flex-1 overflow-y-auto p-2 space-y-0.5">
             {sessions.length === 0 && <p className="text-xs text-[#7a776f] px-2 py-4">No conversations yet</p>}
-            {sessions.map((s) => (
-              <div key={s.id} className={`group flex items-center gap-2 px-3 py-2.5 rounded-lg cursor-pointer transition-colors ${activeSessionId === s.id ? "bg-[#3a3a36] text-[#e8e4dd]" : "text-[#a8a49d] hover:bg-[#353531] hover:text-[#e8e4dd]"}`} onClick={() => loadSession(s.id)}>
-                <span className="flex-1 truncate text-xs">{s.title}</span>
-                <button onClick={(e) => { e.stopPropagation(); handleDeleteSession(s.id); }} className="opacity-0 group-hover:opacity-100 text-[#7a776f] hover:text-[#f87171] transition-all">
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-                </button>
-              </div>
-            ))}
+            {sessions.map((s) => {
+              const isSelected = selectedSessionIds.has(s.id);
+              return (
+                <div
+                  key={s.id}
+                  className={`group flex items-center gap-2 px-3 py-2.5 rounded-lg cursor-pointer transition-colors ${
+                    activeSessionId === s.id && !isBulkMode
+                      ? "bg-[#3a3a36] text-[#e8e4dd]"
+                      : "text-[#a8a49d] hover:bg-[#353531] hover:text-[#e8e4dd]"
+                  }`}
+                  onClick={() => {
+                    if (isBulkMode) {
+                      const next = new Set(selectedSessionIds);
+                      if (next.has(s.id)) next.delete(s.id);
+                      else next.add(s.id);
+                      setSelectedSessionIds(next);
+                    } else {
+                      loadSession(s.id);
+                    }
+                  }}
+                >
+                  {isBulkMode && (
+                    <div className={`w-3.5 h-3.5 rounded border flex items-center justify-center flex-shrink-0 transition-colors ${
+                      isSelected
+                        ? "bg-[#d4a574] border-[#d4a574]"
+                        : "border-[#4a4a44] bg-[#2f2f2c]"
+                    }`}>
+                      {isSelected && (
+                        <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="#1a0802" strokeWidth="4">
+                          <polyline points="20 6 9 17 4 12" />
+                        </svg>
+                      )}
+                    </div>
+                  )}
+                  <span className="flex-1 truncate text-xs">{s.title}</span>
+                  {!isBulkMode && (
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleDeleteSession(s.id);
+                      }}
+                      className="opacity-0 group-hover:opacity-100 text-[#7a776f] hover:text-[#f87171] transition-all"
+                    >
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <line x1="18" y1="6" x2="6" y2="18" />
+                        <line x1="6" y1="6" x2="18" y2="18" />
+                      </svg>
+                    </button>
+                  )}
+                </div>
+              );
+            })}
           </div>
         </div>
       )}

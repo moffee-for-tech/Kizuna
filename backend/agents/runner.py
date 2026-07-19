@@ -102,8 +102,16 @@ async def run_agent(
     if web_search_schema:
         llm_tools.append(web_search_schema)
 
+    # Always include web_browse so agent can perform browser automation
+    web_browse_schema = next((s for s in WORKSPACE_TOOLS_SCHEMAS if s["function"]["name"] == "web_browse"), None)
+    if web_browse_schema:
+        llm_tools.append(web_browse_schema)
+
     if active_skill and active_skill != "none":
-        other_schemas = [s for s in WORKSPACE_TOOLS_SCHEMAS if s["function"]["name"] not in ("workspace_get_skills_registry", "web_search")]
+        other_schemas = [
+            s for s in WORKSPACE_TOOLS_SCHEMAS 
+            if s["function"]["name"] not in ("workspace_get_skills_registry", "web_search", "web_browse")
+        ]
         llm_tools.extend(other_schemas)
 
     try:
@@ -370,8 +378,16 @@ async def run_agent_streaming(
     if web_search_schema:
         llm_tools.append(web_search_schema)
 
+    # Always include web_browse so agent can perform browser automation
+    web_browse_schema = next((s for s in WORKSPACE_TOOLS_SCHEMAS if s["function"]["name"] == "web_browse"), None)
+    if web_browse_schema:
+        llm_tools.append(web_browse_schema)
+
     if active_skill and active_skill != "none":
-        other_schemas = [s for s in WORKSPACE_TOOLS_SCHEMAS if s["function"]["name"] not in ("workspace_get_skills_registry", "web_search")]
+        other_schemas = [
+            s for s in WORKSPACE_TOOLS_SCHEMAS 
+            if s["function"]["name"] not in ("workspace_get_skills_registry", "web_search", "web_browse")
+        ]
         llm_tools.extend(other_schemas)
 
     try:

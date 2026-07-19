@@ -168,6 +168,52 @@ def web_search(query: str) -> str:
     except Exception as e:
         return f"Error during web search: {str(e)}"
 
+def web_browse(url: str, goal: str) -> str:
+    """Executes browser automation on a target website to achieve a specific goal using the TinyFish Web Agent.
+    No CSS selectors or XPath needed.
+    """
+    api_key = os.environ.get("TINYFISH_API_KEY", "")
+    if not api_key:
+        try:
+            from config import settings
+            api_key = getattr(settings, "TINYFISH_API_KEY", "")
+        except Exception:
+            pass
+        
+    if not api_key:
+        return "Error: TINYFISH_API_KEY is not set."
+        
+    try:
+        response = requests.post(
+            "https://agent.tinyfish.ai/v1/automation/run",
+            json={
+                "url": url,
+                "goal": goal,
+                "browser_profile": "stealth",
+                "proxy_config": {
+                    "enabled": True,
+                    "country_code": "US"
+                }
+            },
+            headers={
+                "X-API-Key": api_key,
+                "Content-Type": "application/json"
+            },
+            timeout=120
+        )
+        if response.status_code != 200:
+            return f"Error: TinyFish Web Agent returned status code {response.status_code}: {response.text}"
+            
+        data = response.json()
+        status = data.get("status", "")
+        if status == "COMPLETED":
+            return f"Automation Succeeded!\n\nResult:\n{data.get('result', '')}"
+        else:
+            error_msg = data.get("error", {}).get("message", "Unknown error occurred.")
+            return f"Automation Failed.\nStatus: {status}\nError: {error_msg}"
+    except Exception as e:
+        return f"Error during browser automation: {str(e)}"
+
 # OpenAI Schema Definitions
 WORKSPACE_TOOLS_SCHEMAS = [
     {
@@ -253,6 +299,27 @@ WORKSPACE_TOOLS_SCHEMAS = [
                 "required": ["query"]
             }
         }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "web_browse",
+            "description": "Executes browser automation on a target website to achieve a specific goal using the TinyFish Web Agent.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "url": {
+                        "type": "string",
+                        "description": "The URL of the website to navigate to (e.g. 'https://www.youtube.com')."
+                    },
+                    "goal": {
+                        "type": "string",
+                        "description": "The goal/task to execute on the browser in natural language (e.g. 'Type youtube into search box, click search, and tell me the first video title')."
+                    }
+                },
+                "required": ["url", "goal"]
+            }
+        }
     }
 ]
 
@@ -270,5 +337,7 @@ def execute_workspace_tool(name: str, arguments: Dict[str, Any]) -> str:
         return workspace_get_skills_registry()
     elif name == "web_search":
         return web_search(arguments.get("query", ""))
+    elif name == "web_browse":
+        return web_browse(arguments.get("url", ""), arguments.get("goal", ""))
     else:
         raise ValueError(f"Unknown workspace tool: {name}")

@@ -121,6 +121,19 @@ export default function LoginPage() {
                 </button>
               </form>
 
+              <div className="mt-4 pt-4 border-t border-[#4a4a44] mb-4">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setEmail("dhtanmaya@gmail.com");
+                    setPassword("Admin@123");
+                  }}
+                  className="w-full py-2 bg-[#2f2f2c] hover:bg-[#2f2f2cdd] border border-[#d4a574] text-[#d4a574] rounded-lg text-xs font-semibold tracking-wider transition-colors"
+                >
+                  ⚡ Dev Auto-Fill (dhtanmaya)
+                </button>
+              </div>
+
               <p className="text-center text-sm text-[#a8a49d] mt-6">
                 Don&apos;t have an account?{" "}
                 <a href="/register" className="text-[#d4a574] hover:text-[#e0b88a] transition-colors">
